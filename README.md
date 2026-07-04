@@ -75,7 +75,8 @@ I am actively working on adding more games and features. Contributions are highl
 
 [ ] 🎨 Improve graphics and animations for Snakes and Ladders.
 
-🤝 Contributing
+## 🤝 Contributing
+
 Got an idea for a new game? Want to improve the AI or the UI? Pull requests are more than welcome!
 
 1. Fork the project
