@@ -88,7 +88,7 @@ Got an idea for a new game? Want to improve the AI or the UI? Pull requests are 
 
 5. Open a Pull Request
 
-📜 License
+## 📜 License
 Distributed under the MIT License. See LICENSE for more information.
 
 Made with ❤️ and Python
