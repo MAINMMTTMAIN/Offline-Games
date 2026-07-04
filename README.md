@@ -35,14 +35,14 @@ To run the game from the source code:
 
 2.Install the required dependencies:
 
-```Bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 3.Run the main file:
 
-Bash
-python main.py
-
+   ```bash
+   python main.py
+   ```
 🗺️ Roadmap (Upcoming Features)
 I am actively working on adding more games and features. Contributions are highly welcome!
 
