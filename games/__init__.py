@@ -2,9 +2,6 @@ def __init__(self, screen):
         super().__init__(screen)
         pygame.display.set_caption("Tic Tac Toe - Arcade Mode")
         
-        # --- آیکون پنجره در اینجا حذف شد تا تداخلی با عکس دکمه منو نداشته باشد ---
-        # اگر در آینده خواستی آیکون پنجره را عوض کنی بهتر است یک فایل مستقل کوچک بگذاری.
-        
         # --- رنگ‌های اختصاصی بازی دوز (تم نئونی) ---
         self.BG_COLOR = (10, 10, 18)
         self.GRID_COLOR = (45, 45, 70)
