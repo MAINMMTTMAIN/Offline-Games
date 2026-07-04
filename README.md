@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="myicon.png" width="150" alt="Arcade Icon">
+</p>
+
 # 🎮 Python Offline Arcade
 
 ![Python Version](https://img.shields.io/badge/python-3.x-blue.svg)
