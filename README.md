@@ -35,9 +35,9 @@ To run the game from the source code:
 
 2.Install the required dependencies:
 
-Bash
+```Bash
 pip install -r requirements.txt
-
+```
 3.Run the main file:
 
 Bash
