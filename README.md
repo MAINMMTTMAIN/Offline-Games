@@ -11,7 +11,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
 * **Local Multiplayer:** Grab a friend and play together on the same keyboard/screen.
 * **Persian Language Support:** Custom utility rendering for right-to-left fonts.
 * **Current Games Included:**
-  * ♔♕♖♗♘♙ Chess (powered by Stockfish)
+  * ♔♕♖♗♘♙ Chess
   * ⚅🎲 Backgammon
   * ❌🟢 Tic-Tac-Toe
   * 🐍 Snake Duel
