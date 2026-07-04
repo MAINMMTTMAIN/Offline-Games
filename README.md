@@ -11,14 +11,14 @@ A beautifully designed collection of classic offline multiplayer games built wit
 * **Local Multiplayer:** Grab a friend and play together on the same keyboard/screen.
 * **Persian Language Support:** Custom utility rendering for right-to-left fonts.
 * **Current Games Included:**
-  * ♟️ Chess (powered by Stockfish)
-  * 🎲 Backgammon
-  * ❌ Tic-Tac-Toe
+  * ♔♕♖♗♘♙ Chess (powered by Stockfish)
+  * ⚅🎲 Backgammon
+  * ❌🟢 Tic-Tac-Toe
   * 🐍 Snake Duel
-  * 💣 Minesweeper
-  * 🪜 Snakes and Ladders
-  * 🟩 Dots and Boxes
-  * 🎴 Memory Cards
+  * 💣💥 Minesweeper
+  * 🐉🎲➡⬆ Snakes and Ladders
+  * •🖊️▀▄▀▄▀▄ Dots and Boxes 
+  * 🎴🤔❓ Memory Cards
 
 ## 🚀 How to Play
 
