@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="myicon.png" width ="300" alt="Arcade Icon">
+  <img src="assets/myicon.png" width ="300" alt="Arcade Icon">
 </p>
 
 # 🎮 Python Offline Arcade
