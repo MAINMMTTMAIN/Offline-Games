@@ -56,7 +56,7 @@ To run the game from the source code:
    ```bash
    python main.py
    ```
-🗺️ Roadmap (Upcoming Features)
+## 🗺️ Roadmap (Upcoming Features)
 I am actively working on adding more games and features. Contributions are highly welcome!
 
 [ ] 🤖 Add Single-Player mode (AI Bots) for Chess, Tic-Tac-Toe,dots and boxes and Snake Duel.
