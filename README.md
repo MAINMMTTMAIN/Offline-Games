@@ -90,3 +90,4 @@ Got an idea for a new game? Want to improve the AI or the UI? Pull requests are 
 
 📜 License
 Distributed under the MIT License. See LICENSE for more information.
+Made with ❤️ and Python
