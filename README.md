@@ -37,7 +37,7 @@ To run the game from the source code:
 
    ```bash
    pip install -r requirements.txt
-   ```
+   
 3.Run the main file:
 
    ```bash
