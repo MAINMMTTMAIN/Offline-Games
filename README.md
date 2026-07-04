@@ -24,6 +24,14 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * •🖊️▀▄▀▄▀▄ Dots and Boxes 
   * 🎴🤔❓ Memory Cards
 
+## 📸 Game Previews
+
+| Player Registration | Memory Cards |
+| :---: | :---: |
+| ![Registration](assets/registration.png) | ![Memory](assets/memory.png) |
+| **Dots and Boxes** | **Snake Duel** |
+| ![Dots](assets/dots.png) | ![Snake](assets/snake.png) |
+
 ## 🚀 How to Play
 
 ### For Casual Players (No code required)
