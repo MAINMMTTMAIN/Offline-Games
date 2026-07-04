@@ -32,14 +32,14 @@ To run the game from the source code:
 1. Clone this repository:
    ```bash
    git clone https://github.com/MAINMMTTMAIN/Offline-Games.git
-   
-2.Install the required dependencies:
+   ```
+2. Install the required dependencies:
 
    ```bash
    pip install -r requirements.txt
    ```
    
-3.Run the main file:
+3. Run the main file:
 
    ```bash
    python main.py
