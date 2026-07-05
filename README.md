@@ -30,7 +30,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
 
 | Player Registration | Memory Cards |
 | :---: | :---: |
-| ![Registration](assets/PlayerNames.png) | ![Memory](assets/MemoryCardGame.png) |
+| ![Registration](assets/Menu.png) | ![Memory](assets/MemoryCardGame.png) |
 | **Dots and Boxes** | **Snake Duel** |
 | ![Dots](assets/DotsAndBoxes.png) | ![Snake](assets/SnakeDuel.png) |
 
