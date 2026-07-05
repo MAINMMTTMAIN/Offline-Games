@@ -159,6 +159,7 @@ class Backgammon(BaseGame):
         self.v_dests    = []       # valid destinations for selected
         self.message    = ""
         self.pass_timer = 0        # auto-pass timestamp (ms)
+        self.bot_timer  = 0
 
     # ─── helpers ─────────────────────────────────────────────────────────
 
@@ -349,12 +350,89 @@ class Backgammon(BaseGame):
             self.pass_timer = 0
             self._end_turn()
 
+        if getattr(self.session, 'is_single_player', False) and self.cur_p == 2 and self.state in ("ROLL", "MOVE"):
+            if self.bot_timer == 0:
+                self.bot_timer = pygame.time.get_ticks()
+            
+            if pygame.time.get_ticks() - self.bot_timer > 800:
+                if self.state == "ROLL":
+                    self._roll()
+                    self.bot_timer = pygame.time.get_ticks()
+                elif self.state == "MOVE":
+                    self._make_bot_move()
+                    self.bot_timer = pygame.time.get_ticks()
+
+    def _make_bot_move(self):
+        if not self.dice or not self._has_moves():
+            return
+            
+        diff = getattr(self.session, 'bot_difficulty', 'medium')
+        
+        valid_moves = []
+        if self.bar[1] > 0:
+            dests = self._valid_dests_for("bar")
+            for d in dests:
+                valid_moves.append(("bar", d))
+        else:
+            for pt in range(1, 25):
+                if self._owns(pt):
+                    dests = self._valid_dests_for(pt)
+                    for d in dests:
+                        valid_moves.append((pt, d))
+                        
+        if not valid_moves:
+            return
+            
+        import random
+        if diff == "low":
+            chosen = random.choice(valid_moves)
+        else:
+            best_score = -float('inf')
+            best_move = valid_moves[0]
+            
+            for m in valid_moves:
+                from_pt, to_pt = m
+                score = self._evaluate_single_move(from_pt, to_pt, diff)
+                if score > best_score:
+                    best_score = score
+                    best_move = m
+            chosen = best_move
+            
+        self._do_move(chosen[0], chosen[1])
+
+    def _evaluate_single_move(self, from_pt, to_pt, diff):
+        score = 0
+        if to_pt == 25:
+            score += 1000
+            
+        if to_pt != 25:
+            di = to_pt - 1
+            if self.board[di] == 1:
+                score += 500
+            if self.board[di] < 0:
+                score += 50
+                
+        if diff == "hard":
+            if from_pt != "bar":
+                if self.board[from_pt - 1] == -2:
+                    score -= 200
+                if to_pt != 25 and self.board[to_pt - 1] == 0:
+                    score -= 100
+        return score
+
     # ═════════════════════════════════════════════════════════════════════
     # Events
     # ═════════════════════════════════════════════════════════════════════
 
     def handle_events(self, events):
         super().handle_events(events)
+        
+        if getattr(self.session, 'is_single_player', False) and self.cur_p == 2:
+            for ev in events:
+                if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE:
+                    self.running = False
+            return
+            
         for ev in events:
             if ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
