@@ -14,6 +14,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
 * **Unified UI/UX:** A sleek arcade menu to select and launch games seamlessly.
 * **Local Multiplayer:** Grab a friend and play together on the same keyboard/screen.
 * **Persian Language Support:** Custom utility rendering for right-to-left fonts.
+* **Single-Player AI:** Challenge intelligent bots in Chess, Tic-Tac-Toe, Dots and Boxes, Snake Duel, and Backgammon.
 * **Current Games Included:**
   * ♔♕♖♗♘♙ Chess
   * ⚅🎲 Backgammon
@@ -23,6 +24,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * 🐉🎲➡⬆ Snakes and Ladders
   * •🖊️▀▄▀▄▀▄ Dots and Boxes 
   * 🎴🤔❓ Memory Cards
+  * 🚢 Battleship
 
 ## 📸 Game Previews
 
@@ -31,6 +33,22 @@ A beautifully designed collection of classic offline multiplayer games built wit
 | ![Registration](assets/PlayerNames.png) | ![Memory](assets/MemoryCardGame.png) |
 | **Dots and Boxes** | **Snake Duel** |
 | ![Dots](assets/DotsAndBoxes.png) | ![Snake](assets/SnakeDuel.png) |
+
+## 🤖 AI Implementation
+I have implemented intelligent, custom-built AI agents for several major games to provide a challenging single-player experience. Each AI is tailored to the specific rules and tactical depth of the game:
+
+* **Chess:** Implemented using a **Greedy Material Evaluation Heuristic**. The bot leverages the `python-chess` framework to scan all `legal_moves`, simulates potential captures, and scores them based on standard chess weights (Pawn: 1, Knight/Bishop: 3, Rook: 5, Queen: 9) to execute the highest-value tactical move.
+* **Backgammon:** Features a **Rule-Based Heuristic Agent** designed around standard backgammon probabilities and risk management:
+    * **Valid Move Evaluation:** Automatically calculates all combinations of available dice rolls.
+    * **Strategic Priority:** Prioritizes hitting opponent blots (exposed checkers), creating secure blocks (anchors) with two or more checkers, and moving vulnerable home-board pieces to safety.
+    * **Bearing Off:** Optimizes efficiency during the final phase to bear off checkers as quickly as possible.
+* **Snake Duel:** Utilizes a multi-layered pathfinding and survival process:
+    * **BFS (Breadth-First Search):** Calculates the absolute shortest path to food items.
+    * **Flood Fill Algorithm:** Acts as a vital survival mechanism, performing real-time spatial analysis of the remaining grid to avoid trapping itself in "dead ends."
+* **Dots and Boxes:** Employs a strategic priority-based agent:
+    * **Capture Optimization:** Prioritizes lines that immediately complete a box for scoring.
+    * **Chain Control:** Evaluates potential board outcomes to avoid creating the 3rd edge of any box, preventing the opponent from capturing multiple boxes in a chain.
+* **Tic-Tac-Toe:** Utilizes the **Minimax algorithm** to ensure perfect play, making the AI unbeatable in this mode.
 
 ## 🚀 How to Play
 
