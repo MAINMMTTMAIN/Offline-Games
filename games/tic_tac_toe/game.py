@@ -26,6 +26,7 @@ class TicTacToe(BaseGame):
         self.winner = None       
         self.game_over = False
         self.score_added = False 
+        self.bot_timer = 0
         
         self.font = pygame.font.Font(resource_path("Vazirmatn-VariableFont_wght.ttf"), 20)
         self.font_big = pygame.font.Font(resource_path("Vazirmatn-VariableFont_wght.ttf"), 44)
@@ -59,6 +60,11 @@ class TicTacToe(BaseGame):
                     continue
 
                 mx, my = event.pos
+                
+                # Block input if single player and it's bot's turn
+                if getattr(self.session, 'is_single_player', False) and self.current_player == 2:
+                    continue
+
                 if (self.start_x <= mx <= self.start_x + 3 * self.cell_size and 
                     self.start_y <= my <= self.start_y + 3 * self.cell_size):
                     
@@ -109,7 +115,103 @@ class TicTacToe(BaseGame):
         self.score_added = False
 
     def update(self):
-        pass
+        if self.game_over:
+            return
+            
+        if getattr(self.session, 'is_single_player', False) and self.current_player == 2:
+            if self.bot_timer == 0:
+                self.bot_timer = pygame.time.get_ticks()
+            
+            if pygame.time.get_ticks() - self.bot_timer > 600: # 600ms delay
+                self.make_bot_move()
+                self.bot_timer = 0
+
+    def make_bot_move(self):
+        empty_cells = [(r, c) for r in range(3) for c in range(3) if self.board[r][c] == 0]
+        if not empty_cells:
+            return
+            
+        diff = getattr(self.session, 'bot_difficulty', 'medium')
+        move = None
+        
+        import random
+        if diff == "low":
+            move = random.choice(empty_cells)
+        elif diff == "medium":
+            # Check for win or block
+            move = self.get_winning_move(2) or self.get_winning_move(1)
+            if not move:
+                move = random.choice(empty_cells)
+        else: # hard - minimax
+            move = self.get_best_move_minimax()
+            
+        if move:
+            r, c = move
+            self.board[r][c] = 2
+            self.check_winner()
+            if not self.game_over:
+                self.current_player = 1
+
+    def get_winning_move(self, player):
+        for r in range(3):
+            for c in range(3):
+                if self.board[r][c] == 0:
+                    self.board[r][c] = player
+                    is_win = self.check_win_condition(player)
+                    self.board[r][c] = 0
+                    if is_win:
+                        return (r, c)
+        return None
+
+    def check_win_condition(self, player):
+        for i in range(3):
+            if self.board[i][0] == self.board[i][1] == self.board[i][2] == player: return True
+            if self.board[0][i] == self.board[1][i] == self.board[2][i] == player: return True
+        if self.board[0][0] == self.board[1][1] == self.board[2][2] == player: return True
+        if self.board[0][2] == self.board[1][1] == self.board[2][0] == player: return True
+        return False
+        
+    def get_best_move_minimax(self):
+        best_score = -float('inf')
+        best_move = None
+        for r in range(3):
+            for c in range(3):
+                if self.board[r][c] == 0:
+                    self.board[r][c] = 2
+                    score = self.minimax(False)
+                    self.board[r][c] = 0
+                    if score > best_score:
+                        best_score = score
+                        best_move = (r, c)
+        if not best_move:
+            empty_cells = [(r, c) for r in range(3) for c in range(3) if self.board[r][c] == 0]
+            if empty_cells:
+                best_move = empty_cells[0]
+        return best_move
+
+    def minimax(self, is_maximizing):
+        if self.check_win_condition(2): return 1
+        if self.check_win_condition(1): return -1
+        
+        empty_cells = [(r, c) for r in range(3) for c in range(3) if self.board[r][c] == 0]
+        if not empty_cells: return 0
+        
+        if is_maximizing:
+            best_score = -float('inf')
+            for r, c in empty_cells:
+                self.board[r][c] = 2
+                score = self.minimax(False)
+                self.board[r][c] = 0
+                best_score = max(score, best_score)
+            return best_score
+        else:
+            best_score = float('inf')
+            for r, c in empty_cells:
+                self.board[r][c] = 1
+                score = self.minimax(True)
+                self.board[r][c] = 0
+                best_score = min(score, best_score)
+            return best_score
 
     def draw(self):
         self.screen.fill(self.BG_COLOR)
