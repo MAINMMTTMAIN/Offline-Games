@@ -73,6 +73,8 @@ I am actively working on adding more games and features. Contributions are highl
 
 [ ] 🛸 Space Shooter (1v1)
 
+[ ] ᱝ two player pacman
+
 [x] 🎨 Improve graphics and animations for Snakes and Ladders.
 
 ## 🤝 Contributing
