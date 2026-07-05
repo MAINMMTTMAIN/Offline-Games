@@ -116,6 +116,110 @@ class SnakeDuel(BaseGame):
                     elif event.key == pygame.K_d and self.dir2 != (-1, 0):
                         self.next_dir2 = (1, 0)
 
+    def get_snake_bot_move(self):
+        diff = getattr(self.session, 'bot_difficulty', 'medium')
+        head = self.snake2[0]
+        food = self.food
+        
+        possible_dirs = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+        # Filter reverse direction
+        possible_dirs = [d for d in possible_dirs if d != (-self.dir2[0], -self.dir2[1])]
+        
+        import random
+        
+        def is_safe(x, y):
+            if x < 0 or x >= self.grid_width or y < 0 or y >= self.grid_height: return False
+            if (x, y) in self.snake1: return False
+            if (x, y) in self.snake2[:-1]: return False
+            return True
+            
+        safe_dirs = []
+        for d in possible_dirs:
+            if is_safe(head[0] + d[0], head[1] + d[1]):
+                safe_dirs.append(d)
+                
+        if diff == "low":
+            # Just go towards food, maybe randomly die
+            dx = food[0] - head[0]
+            dy = food[1] - head[1]
+            best_dir = None
+            if abs(dx) > abs(dy):
+                best_dir = (1 if dx > 0 else -1, 0)
+            else:
+                best_dir = (0, 1 if dy > 0 else -1)
+            
+            if best_dir in possible_dirs:
+                if random.random() > 0.1: # 90% chance to go towards food
+                    return best_dir
+            return possible_dirs[0] if possible_dirs else self.dir2
+            
+        elif diff == "medium":
+            if not safe_dirs:
+                return possible_dirs[0] if possible_dirs else self.dir2
+            
+            # Go towards food but only if safe
+            best_dir = safe_dirs[0]
+            min_dist = float('inf')
+            for d in safe_dirs:
+                nx, ny = head[0] + d[0], head[1] + d[1]
+                dist = abs(nx - food[0]) + abs(ny - food[1])
+                if dist < min_dist:
+                    min_dist = dist
+                    best_dir = d
+            return best_dir
+            
+        else: # hard
+            if not safe_dirs:
+                return possible_dirs[0] if possible_dirs else self.dir2
+                
+            # BFS to find food
+            from collections import deque
+            queue = deque([(head, [])])
+            visited = set([head])
+            
+            path_found = None
+            
+            while queue:
+                curr, path = queue.popleft()
+                if curr == food:
+                    path_found = path
+                    break
+                    
+                for d in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+                    nx, ny = curr[0] + d[0], curr[1] + d[1]
+                    if is_safe(nx, ny) and (nx, ny) not in visited:
+                        visited.add((nx, ny))
+                        queue.append(((nx, ny), path + [d]))
+                        
+            if path_found and path_found[0] in safe_dirs:
+                return path_found[0]
+            else:
+                # Survival mode
+                best_dir = safe_dirs[0]
+                max_space = -1
+                for d in safe_dirs:
+                    space = self.flood_fill(head[0] + d[0], head[1] + d[1])
+                    if space > max_space:
+                        max_space = space
+                        best_dir = d
+                return best_dir
+
+    def flood_fill(self, sx, sy):
+        from collections import deque
+        queue = deque([(sx, sy)])
+        visited = set([(sx, sy)])
+        space = 0
+        while queue and space < 100:
+            curr = queue.popleft()
+            space += 1
+            for d in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+                nx, ny = curr[0] + d[0], curr[1] + d[1]
+                if nx >= 0 and nx < self.grid_width and ny >= 0 and ny < self.grid_height:
+                    if (nx, ny) not in visited and (nx, ny) not in self.snake1 and (nx, ny) not in self.snake2[:-1]:
+                        visited.add((nx, ny))
+                        queue.append((nx, ny))
+        return space
+
     def update(self):
         if self.state != "PLAYING":
             return
@@ -123,6 +227,9 @@ class SnakeDuel(BaseGame):
         current_time = pygame.time.get_ticks()
         if current_time - self.last_move_time > self.move_delay:
             self.last_move_time = current_time
+            
+            if getattr(self.session, 'is_single_player', False):
+                self.next_dir2 = self.get_snake_bot_move()
             
             self.dir1 = self.next_dir1
             self.dir2 = self.next_dir2
