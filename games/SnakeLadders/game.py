@@ -4,6 +4,7 @@ import math
 from base_game import BaseGame
 from persian_utils import render_persian_text, reshape_persian
 from main import resource_path
+
 class Snakeladders(BaseGame):
     """Custom Cyberpunk Snakes and Ladders with high-end animations and manual piece activation."""
     
@@ -276,31 +277,115 @@ class Snakeladders(BaseGame):
                 pygame.draw.line(self.screen, self.C["ladder"], (lx, ly), (rx, ry), 2)
 
     def _draw_snakes_graphic(self):
-        """رسم کابل‌های متبلور نئونی منحنی به شکل بدن مار همراه سر مثلثی علمی‌تخیلی"""
+        """رسم مار واقعی‌تر با بدن چند ضلعی و طرح دار"""
         for start, end in self.snakes.items():
             p_head = self._get_cell_coords(start)
             p_tail = self._get_cell_coords(end)
             
-            # تولید زنجیره‌ای از نقاط برای رسم بدنه موج‌دار
-            points = []
-            segments = 30
+            points_center = []
+            segments = 40
+            
             for s in range(segments + 1):
                 t = s / float(segments)
                 cx = p_head[0] + (p_tail[0] - p_head[0]) * t
                 cy = p_head[1] + (p_tail[1] - p_head[1]) * t
-                # ایجاد تمایز و پپچش در بدنه مار
-                wave = math.sin(t * math.pi * 3) * 16
-                points.append((cx + wave, cy))
                 
-            # رسم بدنه ضخیم نئونی
-            if len(points) > 1:
-                pygame.draw.lines(self.screen, (80, 0, 40), False, points, 8) # سایه پشت
-                pygame.draw.lines(self.screen, self.C["snake"], False, points, 4)
+                wave = math.sin(t * math.pi * 3) * 20
                 
-            # رسم سر مار (یک چندضلعی سایبرپانکی متمایز)
-            pygame.draw.circle(self.screen, self.C["snake_head"], p_head, 8)
-            pygame.draw.circle(self.screen, (255, 255, 255), (p_head[0]-3, p_head[1]-2), 2) # چشم‌ها
-            pygame.draw.circle(self.screen, (255, 255, 255), (p_head[0]+3, p_head[1]-2), 2)
+                dx = p_tail[0] - p_head[0]
+                dy = p_tail[1] - p_head[1]
+                length = math.hypot(dx, dy)
+                if length == 0: continue
+                
+                nx, ny = -dy/length, dx/length
+                
+                cx += nx * wave
+                cy += ny * wave
+                
+                points_center.append((cx, cy))
+                
+            if len(points_center) < 2:
+                continue
+                
+            poly_points_left = []
+            poly_points_right = []
+            
+            for s in range(len(points_center)):
+                t = s / float(len(points_center) - 1)
+                
+                max_width = 12
+                if t < 0.1:
+                    width = max_width * (0.5 + 5 * t)
+                elif t > 0.8:
+                    width = max_width * (1.0 - (t - 0.8) * 5)
+                else:
+                    width = max_width
+                    
+                pt = points_center[s]
+                
+                if s < len(points_center) - 1:
+                    nxt = points_center[s+1]
+                else:
+                    nxt = points_center[s]
+                    pt = points_center[s-1]
+                    
+                dx = nxt[0] - pt[0]
+                dy = nxt[1] - pt[1]
+                length = math.hypot(dx, dy)
+                if length == 0:
+                    nx, ny = 1, 0
+                else:
+                    nx, ny = -dy/length, dx/length
+                    
+                pt_left = (points_center[s][0] + nx * width, points_center[s][1] + ny * width)
+                pt_right = (points_center[s][0] - nx * width, points_center[s][1] - ny * width)
+                
+                poly_points_left.append(pt_left)
+                poly_points_right.append(pt_right)
+                
+            poly_points = poly_points_left + list(reversed(poly_points_right))
+            
+            pygame.draw.polygon(self.screen, (30, 200, 80), poly_points)
+            pygame.draw.polygon(self.screen, (10, 100, 40), poly_points, 2)
+            
+            for s in range(4, len(points_center) - 4, 3):
+                l_pt = poly_points_left[s]
+                r_pt = poly_points_right[s]
+                pygame.draw.line(self.screen, (200, 255, 100), l_pt, r_pt, 2)
+                
+            hx, hy = points_center[0]
+            dx = points_center[0][0] - points_center[2][0]
+            dy = points_center[0][1] - points_center[2][1]
+            length = math.hypot(dx, dy)
+            if length == 0:
+                nx, ny = 1, 0
+            else:
+                nx, ny = -dy/length, dx/length
+                
+            head_pts = [
+                (hx + dx*1.5, hy + dy*1.5),
+                (hx + nx*14, hy + ny*14),
+                (hx - dx*0.5, hy - dy*0.5),
+                (hx - nx*14, hy - ny*14)
+            ]
+            pygame.draw.polygon(self.screen, (255, 50, 50), head_pts)
+            pygame.draw.polygon(self.screen, (150, 0, 0), head_pts, 2)
+            
+            eye1 = (hx + nx*7 + dx*0.5, hy + ny*7 + dy*0.5)
+            eye2 = (hx - nx*7 + dx*0.5, hy - ny*7 + dy*0.5)
+            pygame.draw.circle(self.screen, (255, 255, 0), (int(eye1[0]), int(eye1[1])), 3)
+            pygame.draw.circle(self.screen, (255, 255, 0), (int(eye2[0]), int(eye2[1])), 3)
+            
+            pygame.draw.circle(self.screen, (0, 0, 0), (int(eye1[0] + dx*0.1), int(eye1[1] + dy*0.1)), 1)
+            pygame.draw.circle(self.screen, (0, 0, 0), (int(eye2[0] + dx*0.1), int(eye2[1] + dy*0.1)), 1)
+            
+            tongue_start = head_pts[0]
+            tongue_end1 = (tongue_start[0] + dx*1.5 + nx*2, tongue_start[1] + dy*1.5 + ny*2)
+            tongue_end2 = (tongue_start[0] + dx*1.5 - nx*2, tongue_start[1] + dy*1.5 - ny*2)
+            tongue_mid = (tongue_start[0] + dx*0.8, tongue_start[1] + dy*0.8)
+            pygame.draw.line(self.screen, (255, 0, 0), tongue_start, tongue_mid, 2)
+            pygame.draw.line(self.screen, (255, 0, 0), tongue_mid, tongue_end1, 2)
+            pygame.draw.line(self.screen, (255, 0, 0), tongue_mid, tongue_end2, 2)
 
     def _draw_players(self):
         r = min(self.cell_w, self.cell_h) // 4
