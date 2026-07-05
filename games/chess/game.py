@@ -41,6 +41,7 @@ class Chess(BaseGame):
         self.score_added = False
         self.winner_msg = ""
         self.move_history = []  # ذخیره متنی حرکت‌ها برای نمایش در پنل
+        self.bot_timer = 0
         
         self.dragging_piece = None
         self.drag_pos = None
@@ -139,8 +140,11 @@ class Chess(BaseGame):
                         self.reset_game()
                     continue
                 
-                mx, my = event.pos
                 # بررسی اینکه آیا داخل صفحه شطرنج کلیک شده است
+                if getattr(self.session, 'is_single_player', False) and self.board.turn == chess.BLACK:
+                    continue
+
+                mx, my = event.pos
                 if (self.start_x <= mx <= self.start_x + self.board_size and 
                     self.start_y <= my <= self.start_y + self.board_size):
                     
@@ -243,7 +247,257 @@ class Chess(BaseGame):
         self.move_history.clear()
 
     def update(self):
-        pass
+        if self.game_over:
+            return
+            
+        if getattr(self.session, 'is_single_player', False) and self.board.turn == chess.BLACK:
+            if self.bot_timer == 0:
+                self.bot_timer = pygame.time.get_ticks()
+            
+            if pygame.time.get_ticks() - self.bot_timer > 600: # 600ms delay
+                self.make_bot_move()
+                self.bot_timer = 0
+
+    def get_piece_value(self, piece):
+        if not piece: return 0
+        vals = {chess.PAWN: 100, chess.KNIGHT: 320, chess.BISHOP: 330, chess.ROOK: 500, chess.QUEEN: 900, chess.KING: 20000}
+        return vals.get(piece.piece_type, 0)
+
+    PST = {
+        chess.PAWN: [
+            0,  0,  0,  0,  0,  0,  0,  0,
+            50, 50, 50, 50, 50, 50, 50, 50,
+            10, 10, 20, 30, 30, 20, 10, 10,
+             5,  5, 10, 25, 25, 10,  5,  5,
+             0,  0,  0, 20, 20,  0,  0,  0,
+             5, -5,-10,  0,  0,-10, -5,  5,
+             5, 10, 10,-20,-20, 10, 10,  5,
+             0,  0,  0,  0,  0,  0,  0,  0
+        ],
+        chess.KNIGHT: [
+            -50,-40,-30,-30,-30,-30,-40,-50,
+            -40,-20,  0,  0,  0,  0,-20,-40,
+            -30,  0, 10, 15, 15, 10,  0,-30,
+            -30,  5, 15, 20, 20, 15,  5,-30,
+            -30,  0, 15, 20, 20, 15,  0,-30,
+            -30,  5, 10, 15, 15, 10,  5,-30,
+            -40,-20,  0,  5,  5,  0,-20,-40,
+            -50,-40,-30,-30,-30,-30,-40,-50
+        ],
+        chess.BISHOP: [
+            -20,-10,-10,-10,-10,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5, 10, 10,  5,  0,-10,
+            -10,  5,  5, 10, 10,  5,  5,-10,
+            -10,  0, 10, 10, 10, 10,  0,-10,
+            -10, 10, 10, 10, 10, 10, 10,-10,
+            -10,  5,  0,  0,  0,  0,  5,-10,
+            -20,-10,-10,-10,-10,-10,-10,-20
+        ],
+        chess.ROOK: [
+             0,  0,  0,  0,  0,  0,  0,  0,
+             5, 10, 10, 10, 10, 10, 10,  5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+             0,  0,  0,  5,  5,  0,  0,  0
+        ],
+        chess.QUEEN: [
+            -20,-10,-10, -5, -5,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5,  5,  5,  5,  0,-10,
+             -5,  0,  5,  5,  5,  5,  0, -5,
+              0,  0,  5,  5,  5,  5,  0, -5,
+            -10,  5,  5,  5,  5,  5,  0,-10,
+            -10,  0,  5,  0,  0,  0,  0,-10,
+            -20,-10,-10, -5, -5,-10,-10,-20
+        ],
+        chess.KING: [
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -20,-30,-30,-40,-40,-30,-30,-20,
+            -10,-20,-20,-20,-20,-20,-20,-10,
+             20, 20,  0,  0,  0,  0, 20, 20,
+             20, 30, 10,  0,  0, 10, 30, 20
+        ]
+    }
+
+    def evaluate_board(self):
+        score = 0
+        for sq in chess.SQUARES:
+            piece = self.board.piece_at(sq)
+            if piece:
+                val = self.get_piece_value(piece)
+                pst_val = 0
+                if piece.piece_type in self.PST:
+                    idx = sq if piece.color == chess.WHITE else chess.square_mirror(sq)
+                    pst_val = self.PST[piece.piece_type][idx]
+                
+                if piece.color == chess.BLACK:
+                    score += (val + pst_val)
+                else:
+                    score -= (val + pst_val)
+        return score
+
+    def make_bot_move(self):
+        legal_moves = list(self.board.legal_moves)
+        if not legal_moves:
+            return
+            
+        diff = getattr(self.session, 'bot_difficulty', 'medium')
+        move = None
+        import random
+        
+        if diff == "low":
+            move = random.choice(legal_moves)
+        elif diff == "medium":
+            best_score = -float('inf')
+            best_move = None
+            alpha = -float('inf')
+            beta = float('inf')
+            
+            legal_moves.sort(key=lambda m: self.board.is_capture(m), reverse=True)
+            for m in legal_moves:
+                self.board.push(m)
+                # Depth 2 without quiescence search for medium
+                score = self.minimax_simple(1, alpha, beta, False)
+                self.board.pop()
+                if score > best_score:
+                    best_score = score
+                    best_move = m
+                alpha = max(alpha, score)
+                
+            move = best_move if best_move else random.choice(legal_moves)
+        else: # hard
+            # Minimax depth 3
+            best_score = -float('inf')
+            best_move = None
+            alpha = -float('inf')
+            beta = float('inf')
+            
+            # Simple move ordering: captures first
+            legal_moves.sort(key=lambda m: self.board.is_capture(m), reverse=True)
+            
+            for m in legal_moves:
+                self.board.push(m)
+                score = self.minimax(2, alpha, beta, False)
+                self.board.pop()
+                if score > best_score:
+                    best_score = score
+                    best_move = m
+                alpha = max(alpha, score)
+                
+            move = best_move if best_move else random.choice(legal_moves)
+
+        if move:
+            move_san = self.board.san(move)
+            self.move_history.append(move_san)
+            self.board.push(move)
+            self.last_move = move
+            self.check_game_status()
+
+    def minimax_simple(self, depth, alpha, beta, is_maximizing):
+        if depth == 0 or self.board.is_game_over():
+            return self.evaluate_board()
+            
+        legal_moves = list(self.board.legal_moves)
+        legal_moves.sort(key=lambda m: self.board.is_capture(m), reverse=True)
+        
+        if is_maximizing:
+            max_eval = -float('inf')
+            for m in legal_moves:
+                self.board.push(m)
+                ev = self.minimax_simple(depth - 1, alpha, beta, False)
+                self.board.pop()
+                max_eval = max(max_eval, ev)
+                alpha = max(alpha, ev)
+                if beta <= alpha:
+                    break
+            return max_eval
+        else:
+            min_eval = float('inf')
+            for m in legal_moves:
+                self.board.push(m)
+                ev = self.minimax_simple(depth - 1, alpha, beta, True)
+                self.board.pop()
+                min_eval = min(min_eval, ev)
+                beta = min(beta, ev)
+                if beta <= alpha:
+                    break
+            return min_eval
+
+    def quiescence_search(self, alpha, beta, is_maximizing, limit=3):
+        stand_pat = self.evaluate_board()
+        if is_maximizing:
+            if stand_pat >= beta:
+                return beta
+            if alpha < stand_pat:
+                alpha = stand_pat
+        else:
+            if stand_pat <= alpha:
+                return alpha
+            if beta > stand_pat:
+                beta = stand_pat
+
+        if limit == 0:
+            return stand_pat
+
+        legal_moves = list(self.board.legal_moves)
+        captures = [m for m in legal_moves if self.board.is_capture(m)]
+        captures.sort(key=lambda m: self.get_piece_value(self.board.piece_at(m.to_square)), reverse=True)
+
+        for m in captures:
+            self.board.push(m)
+            score = self.quiescence_search(alpha, beta, not is_maximizing, limit - 1)
+            self.board.pop()
+
+            if is_maximizing:
+                if score >= beta:
+                    return beta
+                if score > alpha:
+                    alpha = score
+            else:
+                if score <= alpha:
+                    return alpha
+                if score < beta:
+                    beta = score
+
+        return alpha if is_maximizing else beta
+
+    def minimax(self, depth, alpha, beta, is_maximizing):
+        if depth == 0 or self.board.is_game_over():
+            return self.quiescence_search(alpha, beta, is_maximizing)
+            
+        legal_moves = list(self.board.legal_moves)
+        # Simple move ordering
+        legal_moves.sort(key=lambda m: self.board.is_capture(m), reverse=True)
+        
+        if is_maximizing:
+            max_eval = -float('inf')
+            for m in legal_moves:
+                self.board.push(m)
+                ev = self.minimax(depth - 1, alpha, beta, False)
+                self.board.pop()
+                max_eval = max(max_eval, ev)
+                alpha = max(alpha, ev)
+                if beta <= alpha:
+                    break
+            return max_eval
+        else:
+            min_eval = float('inf')
+            for m in legal_moves:
+                self.board.push(m)
+                ev = self.minimax(depth - 1, alpha, beta, True)
+                self.board.pop()
+                min_eval = min(min_eval, ev)
+                beta = min(beta, ev)
+                if beta <= alpha:
+                    break
+            return min_eval
 
     def draw(self):
         self.screen.fill(self.BG_COLOR)
