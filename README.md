@@ -50,6 +50,66 @@ I have implemented intelligent, custom-built AI agents for several major games t
     * **Chain Control:** Evaluates potential board outcomes to avoid creating the 3rd edge of any box, preventing the opponent from capturing multiple boxes in a chain.
 * **Tic-Tac-Toe:** Utilizes the **Minimax algorithm** to ensure perfect play, making the AI unbeatable in this mode.
 
+## 📂 Project Architecture
+<details>
+<summary><b>Click to expand full Directory Tree</b></summary>
+
+```text
+Offline_Games/
+│   base_game.py                      # Base class for game structure blueprint
+│   main.py                           # Main application entry point & Arcade Hub menu
+│   myicon.ico                        # Main application icon
+│   persian_utils.py                  # Custom utilities for Persian RTL text rendering
+│   setup_chess.py                    # Setup configuration script for Chess module
+│   Vazirmatn-VariableFont_wght.ttf   # Custom Persian font asset
+│   requirements.txt                  # Project dependencies
+│   LICENSE                           # MIT License file
+│   README.md                         # Project documentation
+│   
+└───games/                            # Package containing all core game modules
+    │   __init__.py
+    │   
+    ├───backgammon/
+    │       game.py                   # Backgammon logic and board renderer
+    │       Tqi7Z.png                 # Game icon asset
+    │       
+    ├───battleship/
+    │       game.py                   # Battleship naval warfare logic
+    │       Tqi7Z.png                 # Game icon asset
+    │       
+    ├───chess/
+    │   │   game.py                   # Chess logic and UI wrapper
+    │   │   Tqi7Z.png                 # Game icon asset
+    │   │   
+    │   └───assets/pieces/            # Visual chess piece sprites (Black & White)
+    │           bb.png, bk.png, bn.png, bp.png, bq.png, br.png
+    │           wb.png, wk.png, wn.png, wp.png, wq.png, wr.png
+    │           
+    ├───dots_and_boxes/
+    │       game.py                   # Dots and boxes grid calculation & UI
+    │       Tqi7Z.png                 # Game icon asset
+    │       
+    ├───memory_cards/
+    │       game.py                   # Memory puzzle card matrix logic
+    │       barbie.png, book.png, cat.png, computer.png, ... (Card pictures)
+    │       Tqi7Z.png                 # Game icon asset
+    │       
+    ├───minesweeper/
+    │       game.py                   # Grid mine generation and logic
+    │       Tqi7Z.png                 # Game icon asset
+    │       
+    ├───SnakeLadders/
+    │       game.py                   # Board traversal and dice-rolling logic
+    │       Tqi7Z.png                 # Game icon asset
+    │       
+    ├───snake_duel/
+    │       game.py                   # Core duel mechanics and UI
+    │       Tqi7Z.png                 # Game icon asset
+    │       
+    └───tic_tac_toe/
+            game.py                   # Grid matrix and Minimax state logic
+            Tqi7Z.png                 # Game icon asset
+
 ## 🚀 How to Play
 
 ### For Casual Players (No code required)
