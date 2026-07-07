@@ -111,6 +111,7 @@ Offline_Games/
             Tqi7Z.png                 # Game icon asset
 ```
 </details>
+
 ## 🚀 How to Play
 
 ### For Casual Players (No code required)
