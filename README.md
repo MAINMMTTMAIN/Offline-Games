@@ -109,7 +109,7 @@ Offline_Games/
     └───tic_tac_toe/
             game.py                   # Grid matrix and Minimax state logic
             Tqi7Z.png                 # Game icon asset
-
+```
 ## 🚀 How to Play
 
 ### For Casual Players (No code required)
