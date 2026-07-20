@@ -112,7 +112,7 @@ Offline_Games/
 ```
 </details>
 
-## 🚀 How to Play
+## 🚀 How to Play 
 
 ### For Casual Players (No code required)
 1. Go to the [Releases](../../releases) page of this repository.
