@@ -4,7 +4,6 @@ import math
 from base_game import BaseGame
 from persian_utils import render_persian_text, reshape_persian
 from main import resource_path
-
 class Snakeladders(BaseGame):
     """Custom Cyberpunk Snakes and Ladders with high-end animations and manual piece activation."""
     
@@ -107,18 +106,23 @@ class Snakeladders(BaseGame):
             self.state = "ROLL"
             return
 
-        # ایجاد مسیر فریم‌به-فریم برای حرکت بین خانه‌ها
+        # ایجاد مسیر فریم‌به-فریم برای حرکت بین خانه‌ها (با افکت پرش)
         self.anim_path = []
         current = start
         for _ in range(steps):
             next_cell = current + 1
             p_from = self._get_cell_coords(current)
             p_to = self._get_cell_coords(next_cell)
-            # ۱۰ فریم انیمیشن رفتن از یک خانه به خانه بعدی
-            for f in range(11):
-                t = f / 10.0
+            # ۲۴ فریم انیمیشن رفتن از یک خانه به خانه بعدی (سرعت کندتر)
+            for f in range(25):
+                t = f / 24.0
                 cx = p_from[0] + (p_to[0] - p_from[0]) * t
                 cy = p_from[1] + (p_to[1] - p_from[1]) * t
+                
+                # افکت پرش: استفاده از منحنی سینوسی
+                jump_height = math.sin(t * math.pi) * 25
+                cy -= jump_height
+                
                 self.anim_path.append((cx, cy))
             current = next_cell
 
@@ -206,6 +210,7 @@ class Snakeladders(BaseGame):
                     self.running = False
                 elif ev.key == pygame.K_SPACE:
                     if self.state == "ROLL": self._roll()
+                    elif self.state == "WAIT_CLICK": self._start_player_movement()
                     elif self.state == "GAME_OVER": self.reset_game()
             elif ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
                 if self.state == "ROLL" and self.roll_btn.collidepoint(ev.pos):
@@ -387,8 +392,42 @@ class Snakeladders(BaseGame):
             pygame.draw.line(self.screen, (255, 0, 0), tongue_mid, tongue_end1, 2)
             pygame.draw.line(self.screen, (255, 0, 0), tongue_mid, tongue_end2, 2)
 
+    def _draw_pawn(self, x, y, r, color):
+        """رسم مهره با ظاهر سه‌بعدی (شبیه مهره‌های واقعی منچ)"""
+        x, y = int(x), int(y)
+        # سایه مهره
+        pygame.draw.ellipse(self.screen, (0, 0, 0), (x - r, y + r - 8, r * 2, 10))
+        
+        # پایه مهره
+        base_h = max(4, r // 3)
+        pygame.draw.ellipse(self.screen, color, (x - r, y + r - base_h * 2, r * 2, base_h * 2))
+        pygame.draw.ellipse(self.screen, (0, 0, 0), (x - r, y + r - base_h * 2, r * 2, base_h * 2), 1)
+        
+        # تنه مهره
+        poly_pts = [
+            (x - r + 3, y + r - base_h),
+            (x + r - 3, y + r - base_h),
+            (x + r // 2 - 1, y - r // 2),
+            (x - r // 2 + 1, y - r // 2)
+        ]
+        pygame.draw.polygon(self.screen, color, poly_pts)
+        pygame.draw.polygon(self.screen, (0, 0, 0), poly_pts, 1)
+        
+        # گردن مهره
+        pygame.draw.ellipse(self.screen, color, (x - r // 2, y - r // 2 - 2, r, 6))
+        
+        # سر مهره
+        head_r = int(r // 1.3)
+        head_y = y - r // 2 - head_r + 2
+        pygame.draw.circle(self.screen, color, (x, head_y), head_r)
+        pygame.draw.circle(self.screen, (0, 0, 0), (x, head_y), head_r, 1)
+        
+        # افکت براق بودن سر (Highlight)
+        hl_r = max(2, head_r // 3)
+        pygame.draw.circle(self.screen, (255, 255, 255), (x - head_r // 3, head_y - head_r // 3), hl_r)
+
     def _draw_players(self):
-        r = min(self.cell_w, self.cell_h) // 4
+        r = min(self.cell_w, self.cell_h) // 3
         
         # موقعیت متحرک یا ثابت بازیکن ۱
         if self.state in ("MOVING_STEPS", "MOVING_SPECIAL") and self.cur_p == 1 and self.anim_step_index < len(self.anim_path):
@@ -402,18 +441,20 @@ class Snakeladders(BaseGame):
         else:
             c2 = self._get_cell_coords(self.p_pos[1])
 
-        # رسم فیزیکی مهره‌ها با افکت هاله نور
-        pygame.draw.circle(self.screen, self.C["p1"], (int(c1[0]), int(c1[1])), r)
-        pygame.draw.circle(self.screen, (0, 0, 0), (int(c1[0]), int(c1[1])), r, 2)
-        
-        pygame.draw.circle(self.screen, self.C["p2"], (int(c2[0]), int(c2[1])), r)
-        pygame.draw.circle(self.screen, (0, 0, 0), (int(c2[0]), int(c2[1])), r, 2)
+        # رسم فیزیکی مهره‌ها با افکت سه‌بعدی
+        # اول مهره‌ای که نوبتش نیست رسم بشه تا مهره فعال رویش قرار بگیره
+        if self.cur_p == 2:
+            self._draw_pawn(c1[0], c1[1], r, self.C["p1"])
+            self._draw_pawn(c2[0], c2[1], r, self.C["p2"])
+        else:
+            self._draw_pawn(c2[0], c2[1], r, self.C["p2"])
+            self._draw_pawn(c1[0], c1[1], r, self.C["p1"])
 
         # افکت چشمک‌زن روی مهره فعال برای راهنمایی جهت کلیک
         if self.state == "WAIT_CLICK":
             active_coord = c1 if self.cur_p == 1 else c2
             if (pygame.time.get_ticks() % 500) < 250:
-                pygame.draw.circle(self.screen, (255, 255, 255), (int(active_coord[0]), int(active_coord[1])), r + 4, 2)
+                pygame.draw.circle(self.screen, (255, 255, 255), (int(active_coord[0]), int(active_coord[1])), r + 8, 2)
 
     def _draw_die_dots(self, rect, value, color):
         cx, cy = rect.centerx, rect.centery
