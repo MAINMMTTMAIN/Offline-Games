@@ -29,9 +29,9 @@ A beautifully designed collection of classic offline multiplayer games built wit
 
 ## 📸 Game Previews
 
-| Player Registration | Memory Cards |
+| Pacman Duel | Memory Cards |
 | :---: | :---: |
-| ![Registration](assets/Menu.png) | ![Memory](assets/MemoryCardGame.png) |
+| ![pacman](assets/pacman.png) | ![Memory](assets/MemoryCardGame.png) |
 | **Dots and Boxes** | **Snake Duel** |
 | ![Dots](assets/DotsAndBoxes.png) | ![Snake](assets/SnakeDuel.png) |
 | **SnakeLadders** | **Tic Tac Toe** |
