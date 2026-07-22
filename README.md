@@ -14,7 +14,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
 * **Unified UI/UX:** A sleek arcade menu to select and launch games seamlessly.
 * **Local Multiplayer:** Grab a friend and play together on the same keyboard/screen.
 * **Persian Language Support:** Custom utility rendering for right-to-left fonts.
-* **Single-Player AI:** Challenge intelligent bots in Chess, Tic-Tac-Toe, Dots and Boxes, Snake Duel, and Backgammon.
+* **Single-Player AI:** Challenge intelligent bots in Chess, Tic-Tac-Toe, Dots and Boxes, Snake Duel, Pac-Man, and Backgammon.
 * **Current Games Included:**
   * ♔♕♖♗♘♙ Chess
   * ⚅🎲 Backgammon
@@ -25,6 +25,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * •🖊️▀▄▀▄▀▄ Dots and Boxes 
   * 🎴🤔❓ Memory Cards
   * 🚢 Battleship
+  * ᗧ•••ᗣ Two-Player Pac-Man
 
 ## 📸 Game Previews
 
@@ -51,6 +52,9 @@ I have implemented intelligent, custom-built AI agents for several major games t
     * **Capture Optimization:** Prioritizes lines that immediately complete a box for scoring.
     * **Chain Control:** Evaluates potential board outcomes to avoid creating the 3rd edge of any box, preventing the opponent from capturing multiple boxes in a chain.
 * **Tic-Tac-Toe:** Utilizes the **Minimax algorithm** to ensure perfect play, making the AI unbeatable in this mode.
+* **Two-Player Pac-Man:** Features an advanced dual-layered AI system for both ghosts and bots:
+    * **Ghost AI:** Implements precise pathfinding mimicking the original arcade logic, with states for Chase, Scatter, Frightened, and Dead. Ghosts dynamically calculate optimal routes and retreat intelligently when frightened.
+    * **Hard Bot AI:** Utilizes Breadth-First Search (BFS) for dot consumption while maintaining a real-time "Ghost Danger Map" to predict and evade incoming ghost paths, ensuring maximum survivability.
 
 ## 📂 Project Architecture
 <details>
@@ -100,6 +104,13 @@ Offline_Games/
     │       game.py                   # Grid mine generation and logic
     │       Tqi7Z.png                 # Game icon asset
     │       
+    ├───pacman_duel/
+    │   │   game.py                   # Pac-Man entities, maze logic, and AI
+    │   │   maze.py                   # Classic map layout and grid definitions
+    │   │   Tqi7Z.png                 # Game icon asset
+    │   │   
+    │   └───pacman_sounds/            # Original sound effects (waka, eat, death, etc.)
+    │           
     ├───SnakeLadders/
     │       game.py                   # Board traversal and dice-rolling logic
     │       Tqi7Z.png                 # Game icon asset
@@ -155,7 +166,7 @@ I am actively working on adding more games and features. Contributions are highl
 
 [ ] 🛸 Space Shooter (1v1)
 
-[ ] ᱝ two player pacman
+[x] ᗧ•••ᗣ Two-Player Pac-Man
 
 [x] 🎨 Improve graphics and animations for Snakes and Ladders.
 
