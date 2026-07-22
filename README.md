@@ -33,8 +33,8 @@ A beautifully designed collection of classic offline multiplayer games built wit
 | ![Registration](assets/Menu.png) | ![Memory](assets/MemoryCardGame.png) |
 | **Dots and Boxes** | **Snake Duel** |
 | ![Dots](assets/DotsAndBoxes.png) | ![Snake](assets/SnakeDuel.png) |
-| **SnakeLadders** | **** |
-| ![snakeandladders](assets/SnakeLadders.png) | |
+| **SnakeLadders** | **Tic Tac Toe** |
+| ![snakeandladders](assets/SnakeLadders.png) | ![tictactoe](assets/tictactoe.png) |
 
 ## 🤖 AI Implementation
 I have implemented intelligent, custom-built AI agents for several major games to provide a challenging single-player experience. Each AI is tailored to the specific rules and tactical depth of the game:
