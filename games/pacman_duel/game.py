@@ -720,13 +720,13 @@ class PacmanDuel(BaseGame):
         p2_name = reshape_persian(self.session.player2_name)
         
         # P1 UI
-        t1 = render_persian_text(self.font_md, f"{p1_name}: {self.p1.score}", self.p1.color)
+        t1 = render_persian_text(self.font_md, f"{reshape_persian(p1_name)}: {self.p1.score}", self.p1.color)
         self.screen.blit(t1, (20, 20))
         for i in range(self.p1.lives):
             pygame.draw.circle(self.screen, self.p1.color, (30 + i*20, 60), 8)
             
         # P2 UI
-        t2 = render_persian_text(self.font_md, f"{p2_name}: {self.p2.score}", self.p2.color)
+        t2 = render_persian_text(self.font_md, f"{reshape_persian(p2_name)}: {self.p2.score}", self.p2.color)
         self.screen.blit(t2, (self.W - t2.get_width() - 20, 20))
         for i in range(self.p2.lives):
             pygame.draw.circle(self.screen, self.p2.color, (self.W - 30 - i*20, 60), 8)
@@ -743,8 +743,8 @@ class PacmanDuel(BaseGame):
             ov.fill((0,0,0,200))
             self.screen.blit(ov, (0,0))
             
-            if self.p1.score > self.p2.score: win_txt = f"{p1_name} WINS!"
-            elif self.p2.score > self.p1.score: win_txt = f"{p2_name} WINS!"
+            if self.p1.score > self.p2.score: win_txt = f"{reshape_persian(p1_name)} WINS!"
+            elif self.p2.score > self.p1.score: win_txt = f"{reshape_persian(p2_name)} WINS!"
             else: win_txt = "DRAW!"
             
             wt = render_persian_text(self.font_lg, win_txt, (255, 255, 255))
