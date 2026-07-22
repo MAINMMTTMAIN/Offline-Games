@@ -93,8 +93,10 @@ class Battleship(BaseGame):
         self.drag_cur_rc   = None
 
         # Turn transition
-        self.transition     = False  # waiting for click before battle turn
-        self.transition_msg = ""
+        self.transition     = True  # wait for player 1
+        p1_name = reshape_persian(getattr(self, 'session', type('obj', (object,), {'player1_name': 'Player 1'})).player1_name)
+        p2_name = reshape_persian(getattr(self, 'session', type('obj', (object,), {'player2_name': 'Player 2'})).player2_name)
+        self.transition_msg = f"{p1_name} — place your ships\n({p2_name}, look away!)"
 
         self._make_confirm_btn()
 
@@ -331,7 +333,23 @@ class Battleship(BaseGame):
                 elif ev.key == pygame.K_r and self.game_over: self._full_reset()
                 elif ev.key == pygame.K_SPACE and not self.game_over:
                     if self.phase in ("place_p1","place_p2"):
-                        self.pl_horiz = not self.pl_horiz
+                        p_num  = 1 if self.phase == "place_p1" else 2
+                        ships  = self.p1_ships if p_num == 1 else self.p2_ships
+                        board  = self.p1_board if p_num == 1 else self.p2_board
+                        if getattr(self, 'drag_ship', None) is not None:
+                            ship = ships[self.drag_ship]
+                            ship["horiz"] = not ship["horiz"]
+                            mx, my = pygame.mouse.get_pos()
+                            rc = self._rc_from_mouse(mx, my, p_num)
+                            if rc:
+                                r0 = rc[0] - self.drag_offset_r
+                                c0 = rc[1] - self.drag_offset_c
+                                new_cells = self._ship_cells(r0, c0, len(ship["cells"]), ship["horiz"])
+                                if self._valid_placement(new_cells, board, ships, exclude_ship=self.drag_ship):
+                                    ship["cells"] = new_cells
+                                    self.drag_cur_rc = new_cells
+                        else:
+                            self.pl_horiz = not self.pl_horiz
                 
 
             # Transition screen – click to continue
@@ -355,7 +373,19 @@ class Battleship(BaseGame):
                 ox, oy = self._board_origin(p_num)
 
                 if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 3:
-                    self.pl_horiz = not self.pl_horiz
+                    if self.drag_ship is not None:
+                        ship = ships[self.drag_ship]
+                        ship["horiz"] = not ship["horiz"]
+                        rc = self._rc_from_mouse(mx, my, p_num)
+                        if rc:
+                            r0 = rc[0] - self.drag_offset_r
+                            c0 = rc[1] - self.drag_offset_c
+                            new_cells = self._ship_cells(r0, c0, len(ship["cells"]), ship["horiz"])
+                            if self._valid_placement(new_cells, board, ships, exclude_ship=self.drag_ship):
+                                ship["cells"] = new_cells
+                                self.drag_cur_rc = new_cells
+                    else:
+                        self.pl_horiz = not self.pl_horiz
 
                 if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
                     # Confirm button
@@ -365,11 +395,14 @@ class Battleship(BaseGame):
                             self.pl_idx   = 0
                             self.pl_horiz = True
                             self.transition     = True
-                            self.transition_msg = "Player 2 — place your ships\n(Player 1, look away!)"
+                            p1_name = reshape_persian(self.session.player1_name)
+                            p2_name = reshape_persian(self.session.player2_name)
+                            self.transition_msg = f"{p2_name} — place your ships\n({p1_name}, look away!)"
                         else:
                             self.phase      = "battle_p1"
                             self.transition = True
-                            self.transition_msg = "Battle begins!\nPlayer 1 shoots first — Player 2, look away!"
+                            p1_name = reshape_persian(self.session.player1_name)
+                            self.transition_msg = f"Battle begins!\n{p1_name} shoots first"
                         continue
 
                     rc = self._rc_from_mouse(mx, my, p_num)
@@ -442,7 +475,8 @@ class Battleship(BaseGame):
                             if not self.game_over and not self.extra_turn:
                                 self.phase      = "battle_p2"
                                 self.transition = True
-                                self.transition_msg = "Player 2's turn\n(Player 1, look away!)"
+                                p2_name = reshape_persian(self.session.player2_name)
+                                self.transition_msg = f"{p2_name}'s turn"
                     else:
                         rc = self._rc_from_mouse(mx, my, 1)
                         if rc and rc not in self.p2_shots:
@@ -450,7 +484,8 @@ class Battleship(BaseGame):
                             if not self.game_over and not self.extra_turn:
                                 self.phase      = "battle_p1"
                                 self.transition = True
-                                self.transition_msg = "Player 1's turn\n(Player 2, look away!)"
+                                p1_name = reshape_persian(self.session.player1_name)
+                                self.transition_msg = f"{p1_name}'s turn"
 
     # ──────────────────── update ────────────────────
     def update(self):
@@ -508,7 +543,7 @@ class Battleship(BaseGame):
                 self._draw_ship_graphic(drag_ship, ox, oy, alpha=160)
 
             # Title
-            title = render_persian_text(self.font_md, f"Place ships — {p_name}", p_col)
+            title = render_persian_text(self.font_md, f"Place ships — {reshape_persian(p_name)}", p_col)
             self.screen.blit(title, (self.W//2 - title.get_width()//2, 22))
 
             # Ship list on right
@@ -559,8 +594,8 @@ class Battleship(BaseGame):
 
             # Player name labels
             for (ox, p_name, p_col, active) in [
-                (self.b1x, p1_name, self.C_P1, p1_act),
-                (self.b2x, p2_name, self.C_P2, p2_act),
+                (self.b1x, reshape_persian(p1_name), self.C_P1, p1_act),
+                (self.b2x, reshape_persian(p2_name), self.C_P2, p2_act),
             ]:
                 border_col = p_col if active else (50,60,80)
                 panel = pygame.Surface((GRID_W*CELL, 30), pygame.SRCALPHA)
@@ -576,7 +611,7 @@ class Battleship(BaseGame):
                 cur_name  = p1_name if p1_act else p2_name
                 cur_col   = self.C_P1 if p1_act else self.C_P2
                 shoot_txt = "Click enemy board to fire!"
-                ti = render_persian_text(self.font_sm, f"🎯 {cur_name}'s turn — {shoot_txt}", cur_col)
+                ti = render_persian_text(self.font_sm, f"🎯 {reshape_persian(cur_name)}'s turn — {shoot_txt}", cur_col)
                 self.screen.blit(ti, (self.W//2 - ti.get_width()//2, self.H - 40))
                 if self.extra_turn:
                     bonus = self.font_sm.render("✦ Hit! Bonus shot!", True, (255,200,50))
@@ -604,7 +639,7 @@ class Battleship(BaseGame):
             self.screen.blit(ov, (0,0))
             wn = p1_name if self.winner == 1 else p2_name
             wc = self.C_P1 if self.winner == 1 else self.C_P2
-            wt = render_persian_text(self.font_lg, f"⚓ {wn} WINS!", wc)
+            wt = render_persian_text(self.font_lg, f"⚓ {reshape_persian(wn)} WINS!", wc)
             self.screen.blit(wt, (self.W//2 - wt.get_width()//2, self.H//2 - 60))
             re = self.font_sm.render("Click, or press R to restart | ESC to exit", True, (180,180,200))
             self.screen.blit(re, (self.W//2 - re.get_width()//2, self.H//2 + 50))
