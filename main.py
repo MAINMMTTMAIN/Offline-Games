@@ -299,7 +299,7 @@ class ArcadeMenu:
             self.error_msg = ""
 
     def launch_game(self, game_id):
-        supported_single_player = ["tic_tac_toe", "dots_and_boxes", "chess", "snake_duel", "backgammon", "dart"]
+        supported_single_player = ["tic_tac_toe", "dots_and_boxes", "chess", "snake_duel", "backgammon", "dart", "pacman_duel"]
         if getattr(self.session, 'is_single_player', False) and game_id not in supported_single_player:
             self.error_msg = "This game doesn't have bot"
             self.error_timer = pygame.time.get_ticks() + 3000
@@ -356,6 +356,10 @@ class ArcadeMenu:
             elif game_id == "billiards":
                  from games.billiards import game as billiards_game
                  active_game = billiards_game.Billiards(self.screen, self.session)
+                 
+            elif game_id == "pacman_duel":
+                 from games.pacman_duel import game as pacman_duel_game
+                 active_game = pacman_duel_game.PacmanDuel(self.screen, self.session)
             
             # اگر بازی لود شد، حلقه اجرای بازی را شروع کن
             if active_game:
