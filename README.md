@@ -11,6 +11,7 @@
 A beautifully designed collection of classic offline multiplayer games built with Python and Pygame. Featuring a unified cyberpunk/neon theme, this arcade brings your favorite tabletop and logic games to your screen.
 
 ## ✨ Features
+* **Welcome Page:** A beautiful introductory screen that greets you before entering the arcade.
 * **Unified UI/UX:** A sleek arcade menu to select and launch games seamlessly.
 * **Local Multiplayer:** Grab a friend and play together on the same keyboard/screen.
 * **Persian Language Support:** Custom utility rendering for right-to-left fonts.
@@ -26,12 +27,14 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * 🎴🤔❓ Memory Cards
   * 🚢 Battleship
   * ᗧ•••ᗣ Two-Player Pac-Man
+  * 🔴🟡 Connect Four
+  * 💣🔥 Bomberman
 
 ## 📸 Game Previews
 
-| Pacman Duel | Memory Cards |
+| Player Registration | Memory Cards |
 | :---: | :---: |
-| ![pacman](assets/pacman.png) | ![Memory](assets/MemoryCardGame.png) |
+| ![Registration](assets/Menu.png) | ![Memory](assets/MemoryCardGame.png) |
 | **Dots and Boxes** | **Snake Duel** |
 | ![Dots](assets/DotsAndBoxes.png) | ![Snake](assets/SnakeDuel.png) |
 | **SnakeLadders** | **Tic Tac Toe** |
@@ -83,6 +86,10 @@ Offline_Games/
     │       game.py                   # Battleship naval warfare logic
     │       Tqi7Z.png                 # Game icon asset
     │       
+    ├───bomberman/
+    │       game.py                   # Bomberman classic explosive action
+    │       icon.png                  # Game icon asset
+    │       
     ├───chess/
     │   │   game.py                   # Chess logic and UI wrapper
     │   │   Tqi7Z.png                 # Game icon asset
@@ -91,6 +98,10 @@ Offline_Games/
     │           bb.png, bk.png, bn.png, bp.png, bq.png, br.png
     │           wb.png, wk.png, wn.png, wp.png, wq.png, wr.png
     │           
+    ├───connect_four/
+    │       game.py                   # Connect Four grid and win checking logic
+    │       icon.png                  # Game icon asset
+    │       
     ├───dots_and_boxes/
     │       game.py                   # Dots and boxes grid calculation & UI
     │       Tqi7Z.png                 # Game icon asset
@@ -169,6 +180,10 @@ I am actively working on adding more games and features. Contributions are highl
 [x] ᗧ•••ᗣ Two-Player Pac-Man
 
 [x] 🎨 Improve graphics and animations for Snakes and Ladders.
+
+[x] 🔴🟡 Connect Four
+
+[x] 💣🔥 Bomberman
 
 ## 🤝 Contributing
 
