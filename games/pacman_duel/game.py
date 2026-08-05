@@ -465,6 +465,10 @@ class PacmanDuel(BaseGame):
             if now - self.timer > 1500:
                 if self.p1.is_dead and self.p2.is_dead:
                     self.state = "GAME_OVER"
+                    if self.p1.score > self.p2.score:
+                        self.session.scores["player1"] += 1
+                    elif self.p2.score > self.p1.score:
+                        self.session.scores["player2"] += 1
                 else:
                     self.state = "READY"
                     self.timer = now
