@@ -32,6 +32,9 @@ A beautifully designed collection of classic offline multiplayer games built wit
 
 ## 📸 Game Previews
 
+| Bomberman | Backgammon |
+| :---: | :---: |
+| ![pacman](assets/pacman.png) | ![Memory](assets/MemoryCardGame.png) |
 | Pacman Duel | Memory Cards |
 | :---: | :---: |
 | ![pacman](assets/pacman.png) | ![Memory](assets/MemoryCardGame.png) |
