@@ -15,7 +15,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
 * **Unified UI/UX:** A sleek arcade menu to select and launch games seamlessly.
 * **Local Multiplayer:** Grab a friend and play together on the same keyboard/screen.
 * **Persian Language Support:** Custom utility rendering for right-to-left fonts.
-* **Single-Player AI:** Challenge intelligent bots in Chess, Tic-Tac-Toe, Dots and Boxes, Snake Duel, Pac-Man, and Backgammon.
+* **Single-Player AI:** Challenge intelligent bots in Chess, Tic-Tac-Toe, Dots and Boxes, Snake Duel, Pac-Man, Backgammon, Connect Four, and Bomberman.
 * **Current Games Included:**
   * ♔♕♖♗♘♙ Chess
   * ⚅🎲 Backgammon
@@ -58,6 +58,10 @@ I have implemented intelligent, custom-built AI agents for several major games t
 * **Two-Player Pac-Man:** Features an advanced dual-layered AI system for both ghosts and bots:
     * **Ghost AI:** Implements precise pathfinding mimicking the original arcade logic, with states for Chase, Scatter, Frightened, and Dead. Ghosts dynamically calculate optimal routes and retreat intelligently when frightened.
     * **Hard Bot AI:** Utilizes Breadth-First Search (BFS) for dot consumption while maintaining a real-time "Ghost Danger Map" to predict and evade incoming ghost paths, ensuring maximum survivability.
+* **Connect Four:** Utilizes the **Minimax algorithm** with alpha-beta pruning. It evaluates the board state by scoring potential 4-in-a-row windows, ensuring optimal drops and proactively blocking player wins.
+* **Bomberman:** Features a dynamic **Relentless Hunt AI** that balances survival and aggression:
+    * **Survival & Pathfinding:** Uses BFS and a real-time Danger Map to evade active bombs and flames.
+    * **Strategic Combat:** Opportunistically plants bombs when aligned with the player, collects power-ups, and breaks soft walls to reach the target.
 
 ## 📂 Project Architecture
 <details>
