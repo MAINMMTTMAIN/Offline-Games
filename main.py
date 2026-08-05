@@ -31,7 +31,7 @@ SCREEN_WIDTH = infoObject.current_w
 SCREEN_HEIGHT = infoObject.current_h
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
-pygame.display.set_caption("Python Offline Arcade")
+pygame.display.set_caption("Arcade Games")
 clock = pygame.time.Clock()
 
 # رنگ‌ها (تم سایبرپانک / نئونی)
@@ -266,6 +266,16 @@ class ArcadeMenu:
         score_surf = render_persian_text(self.font_score, scores_text, TEXT_COLOR)
         screen.blit(score_surf, (SCREEN_WIDTH // 2 - score_surf.get_width() // 2, 122))
         
+        if getattr(self.session, 'is_single_player', False):
+            self.diff_btn_rect = pygame.Rect(SCREEN_WIDTH - 280, 115, 160, 40)
+            # Create hover effect
+            mouse_pos = pygame.mouse.get_pos()
+            hovering = self.diff_btn_rect.collidepoint(mouse_pos)
+            pygame.draw.rect(screen, ACCENT_COLOR if hovering else PANEL_COLOR, self.diff_btn_rect, border_radius=8)
+            pygame.draw.rect(screen, ACCENT_COLOR, self.diff_btn_rect, 2, border_radius=8)
+            diff_text = self.font_score.render(f"Bot Level: {self.session.bot_difficulty.upper()}", True, BG_COLOR if hovering else ACCENT_COLOR)
+            screen.blit(diff_text, (self.diff_btn_rect.centerx - diff_text.get_width() // 2, self.diff_btn_rect.centery - diff_text.get_height() // 2))
+        
         # چیدمان شبکه ای آیکون‌ها بر اساس مانیتور تمام صفحه
         start_x = (SCREEN_WIDTH - (4 * 160)) // 2  
         start_y = 240
@@ -299,7 +309,7 @@ class ArcadeMenu:
             self.error_msg = ""
 
     def launch_game(self, game_id):
-        supported_single_player = ["tic_tac_toe", "dots_and_boxes", "chess", "snake_duel", "backgammon", "dart", "pacman_duel"]
+        supported_single_player = ["tic_tac_toe", "dots_and_boxes", "chess", "snake_duel", "backgammon", "dart", "pacman_duel", "bomberman", "connect_four"]
         if getattr(self.session, 'is_single_player', False) and game_id not in supported_single_player:
             self.error_msg = "This game doesn't have bot"
             self.error_timer = pygame.time.get_ticks() + 3000
@@ -360,6 +370,14 @@ class ArcadeMenu:
             elif game_id == "pacman_duel":
                  from games.pacman_duel import game as pacman_duel_game
                  active_game = pacman_duel_game.PacmanDuel(self.screen, self.session)
+                 
+            elif game_id == "bomberman":
+                 from games.bomberman import game as bomberman_game
+                 active_game = bomberman_game.Bomberman(self.screen, self.session)
+                 
+            elif game_id == "connect_four":
+                 from games.connect_four import game as connect_four_game
+                 active_game = connect_four_game.ConnectFour(self.screen, self.session)
             
             # اگر بازی لود شد، حلقه اجرای بازی را شروع کن
             if active_game:
@@ -379,13 +397,139 @@ class ArcadeMenu:
                     game_clock.tick(60)
             
             # بعد از خروج از بازی، عنوان پنجره را برگردان
-            pygame.display.set_caption("Python Offline Arcade")
+            pygame.display.set_caption("Arcade Games")
 
         except Exception as e:
             print(f"خطا در اجرای بازی {game_id}: {e}")
 
+def show_welcome_screen(screen):
+    import random
+    import math
+    import os
+    font_large = pygame.font.Font(resource_path("Vazirmatn-VariableFont_wght.ttf"), 64)
+    
+    try:
+        pygame.mixer.init()
+        bg_music_path = resource_path(os.path.join("games", "pacman_duel", "pacman_sounds", "intermission.wav"))
+        if os.path.exists(bg_music_path):
+            pygame.mixer.music.load(bg_music_path)
+            pygame.mixer.music.play(-1) # Loop indefinitely
+    except:
+        pass
+        
+    start_time = pygame.time.get_ticks()
+    duration = 15000  # 15 seconds
+    
+    clock = pygame.time.Clock()
+    
+    # Load all available game icons
+    games_dir = os.path.join(get_base_path(), "games")
+    icon_surfaces = []
+    if os.path.exists(games_dir):
+        for folder in os.listdir(games_dir):
+            folder_path = os.path.join(games_dir, folder)
+            if os.path.isdir(folder_path) and not folder.startswith("__"):
+                icon_path = os.path.join(folder_path, "icon.png")
+                if not os.path.exists(icon_path):
+                    icon_path = os.path.join(folder_path, "Tqi7Z.png")
+                if os.path.exists(icon_path):
+                    try:
+                        img = pygame.image.load(icon_path).convert_alpha()
+                        icon_surfaces.append(img)
+                    except: pass
+                    
+    floating_icons = []
+    if icon_surfaces:
+        for _ in range(20):
+            img = random.choice(icon_surfaces)
+            size = random.randint(40, 100)
+            scaled = pygame.transform.scale(img, (size, size))
+            scaled.set_alpha(random.randint(100, 200))
+            floating_icons.append({
+                'surf': scaled,
+                'x': random.randint(0, SCREEN_WIDTH),
+                'y': random.randint(0, SCREEN_HEIGHT),
+                'speed': random.uniform(0.5, 3.0),
+                'size': size
+            })
+            
+    # Particle system for cyberpunk background
+    particles = []
+    for _ in range(100):
+        particles.append({
+            'x': random.randint(0, SCREEN_WIDTH),
+            'y': random.randint(0, SCREEN_HEIGHT),
+            'speed': random.uniform(0.5, 2.0),
+            'radius': random.randint(1, 4),
+            'color': random.choice([ACCENT_COLOR, (255, 0, 255), (0, 255, 255)])
+        })
+        
+    grid_offset_y = 0
+    
+    running = True
+    while running:
+        current_time = pygame.time.get_ticks()
+        if current_time - start_time > duration:
+            break
+            
+        screen.fill(BG_COLOR)
+        
+        # Moving Grid Background
+        grid_offset_y = (grid_offset_y + 1) % 40
+        for x in range(0, SCREEN_WIDTH, 40):
+            pygame.draw.line(screen, (20, 20, 40), (x, 0), (x, SCREEN_HEIGHT), 1)
+        for y in range(0, SCREEN_HEIGHT + 40, 40):
+            pygame.draw.line(screen, (20, 20, 40), (0, y - grid_offset_y), (SCREEN_WIDTH, y - grid_offset_y), 1)
+        
+        # Update and draw particles
+        for p in particles:
+            p['y'] -= p['speed']
+            if p['y'] < 0:
+                p['y'] = SCREEN_HEIGHT
+                p['x'] = random.randint(0, SCREEN_WIDTH)
+            pygame.draw.circle(screen, p['color'], (int(p['x']), int(p['y'])), p['radius'])
+            
+        # Update and draw floating icons
+        for icon in floating_icons:
+            icon['y'] -= icon['speed']
+            if icon['y'] < -icon['size']:
+                icon['y'] = SCREEN_HEIGHT
+                icon['x'] = random.randint(0, SCREEN_WIDTH)
+            screen.blit(icon['surf'], (int(icon['x']), int(icon['y'])))
+        
+        # Draw Title
+        title_surf = font_large.render("Arcade Games", True, ACCENT_COLOR)
+        screen.blit(title_surf, (SCREEN_WIDTH // 2 - title_surf.get_width() // 2, SCREEN_HEIGHT // 2 - 50))
+        
+        # Draw Progress Bar
+        progress = (current_time - start_time) / duration
+        bar_width = 400
+        bar_height = 10
+        bar_x = SCREEN_WIDTH // 2 - bar_width // 2
+        bar_y = SCREEN_HEIGHT // 2 + 50
+        pygame.draw.rect(screen, PANEL_COLOR, (bar_x, bar_y, bar_width, bar_height), border_radius=5)
+        pygame.draw.rect(screen, ACCENT_COLOR, (bar_x, bar_y, bar_width * progress, bar_height), border_radius=5)
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+                    
+        pygame.display.flip()
+        clock.tick(60)
+        
+    try:
+        pygame.mixer.music.stop()
+    except:
+        pass
+
 def main():
     session = GameSession()
+    show_welcome_screen(screen)
     session.get_player_names()
     
     menu = ArcadeMenu(session,screen)
@@ -403,9 +547,15 @@ def main():
                     sys.exit()
                 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                for game in menu.available_games:
-                    if "rect" in game and game["rect"].collidepoint(event.pos):
-                        menu.launch_game(game["id"])
+                if getattr(session, 'is_single_player', False) and hasattr(menu, 'diff_btn_rect') and menu.diff_btn_rect.collidepoint(event.pos):
+                    diffs = ["low", "medium", "hard"]
+                    idx = diffs.index(session.bot_difficulty)
+                    session.bot_difficulty = diffs[(idx + 1) % len(diffs)]
+                    session.player2_name = f"Bot ({session.bot_difficulty.capitalize()})"
+                else:
+                    for game in menu.available_games:
+                        if "rect" in game and game["rect"].collidepoint(event.pos):
+                            menu.launch_game(game["id"])
         
         menu.draw_menu()
         pygame.display.flip()
