@@ -115,7 +115,13 @@ Offline_Games/
     ├───dots_and_boxes/
     │       game.py                   # Dots and boxes grid calculation & UI
     │       Tqi7Z.png                 # Game icon asset
-    │       
+    │
+    ├───lumberjack_battle/
+    │       sounds/
+    │             chop.wav,crack.wav,die.wav            
+    │       game.py                  
+    │       Tqi7Z.png                 # Game icon asset
+    │  
     ├───memory_cards/
     │       game.py                   # Memory puzzle card matrix logic
     │       barbie.png, book.png, cat.png, computer.png, ... (Card pictures)
@@ -137,9 +143,14 @@ Offline_Games/
     │       Tqi7Z.png                 # Game icon asset
     │       
     ├───snake_duel/
+    │       sounds/                   
     │       game.py                   # Core duel mechanics and UI
     │       Tqi7Z.png                 # Game icon asset
-    │       
+    │
+    ├───typing_race/
+    │       game.py                   
+    │       Tqi7Z.png                 # Game icon asset
+    │
     └───tic_tac_toe/
             game.py                   # Grid matrix and Minimax state logic
             Tqi7Z.png                 # Game icon asset
