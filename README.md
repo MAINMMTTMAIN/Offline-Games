@@ -29,6 +29,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * ᗧ•••ᗣ Two-Player Pac-Man
   * 🔴🟡 Connect Four
   * 💣🔥 Bomberman
+  * 🪓🌲 lumberjack
 
 ## 📸 Game Previews
 
