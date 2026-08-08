@@ -12,7 +12,7 @@ class SnakeDuel(BaseGame):
         self.width = screen.get_width()
         self.height = screen.get_height()
         
-        self.block_size = 25
+        self.block_size = 28
         
         # Calculate grid boundaries based on full screen to leave a margin
         self.margin = 50
@@ -38,6 +38,22 @@ class SnakeDuel(BaseGame):
         self.color_p2 = (50, 150, 255) # Blue (Player 2)
         self.color_food = (255, 50, 50) # Red
         self.color_text = (240, 240, 255)
+        
+        # Audio
+        self.eat_sound = None
+        self.crash_sound = None
+        try:
+            import os
+            pygame.mixer.init()
+            base = os.path.dirname(os.path.abspath(__file__))
+            eat_path = os.path.join(base, "sounds", "crunch.wav")
+            crash_path = os.path.join(base, "sounds", "thud.wav")
+            if os.path.exists(eat_path):
+                self.eat_sound = pygame.mixer.Sound(eat_path)
+            if os.path.exists(crash_path):
+                self.crash_sound = pygame.mixer.Sound(crash_path)
+        except Exception as e:
+            print(f"Error loading sounds: {e}")
 
         self.reset_game()
 
@@ -265,13 +281,16 @@ class SnakeDuel(BaseGame):
                 p2_dead = True
                 
             if p1_dead and p2_dead:
+                if self.crash_sound: self.crash_sound.play()
                 self.game_over("Draw!")
                 return
             elif p1_dead:
+                if self.crash_sound: self.crash_sound.play()
                 self.session.scores["player2"] += 1
                 self.game_over(f"{reshape_persian(self.session.player2_name)} Wins!")
                 return
             elif p2_dead:
+                if self.crash_sound: self.crash_sound.play()
                 self.session.scores["player1"] += 1
                 self.game_over(f"{reshape_persian(self.session.player1_name)} Wins!")
                 return
@@ -285,6 +304,7 @@ class SnakeDuel(BaseGame):
             ate2 = (head2 == self.food)
             
             if ate1 or ate2:
+                if self.eat_sound: self.eat_sound.play()
                 self.food = self.spawn_food()
                 # Speed up slightly
                 self.move_delay = max(40, int(self.move_delay * 0.98))
@@ -318,18 +338,103 @@ class SnakeDuel(BaseGame):
         )
         pygame.draw.rect(self.screen, self.color_wall, border_rect, width=5)
         
-        # Draw Food
-        pygame.draw.rect(self.screen, self.color_food, self.get_rect(self.food[0], self.food[1]).inflate(-2, -2), border_radius=4)
+        # Draw Food (Realistic Apple)
+        food_rect = self.get_rect(self.food[0], self.food[1])
+        center = food_rect.center
+        radius = self.block_size // 2 - 2
+        # Apple body
+        pygame.draw.circle(self.screen, self.color_food, center, radius)
+        # Highlight
+        pygame.draw.circle(self.screen, (255, 100, 100), (center[0] - radius//3, center[1] - radius//3), radius//3)
+        # Stem
+        pygame.draw.rect(self.screen, (101, 67, 33), (center[0] - 1, center[1] - radius - 3, 3, 5))
+        # Leaf
+        pygame.draw.ellipse(self.screen, (34, 139, 34), (center[0] + 1, center[1] - radius - 4, 6, 4))
         
+        import math
+        def draw_snake(snake, base_color, head_color, direction):
+            # --- PASS 1: Draw body (skip index 0 = head) ---
+            for i, segment in enumerate(snake):
+                if i == 0:
+                    continue
+                seg_rect = self.get_rect(segment[0], segment[1])
+                seg_center = seg_rect.center
+                seg_radius = self.block_size // 2 - 1
+                
+                scale = max(0.5, 1.0 - (i / max(10, len(snake))))
+                current_radius = int(seg_radius * scale)
+                pygame.draw.circle(self.screen, base_color, seg_center, current_radius)
+                
+                prev_seg = snake[i-1]
+                if abs(prev_seg[0] - segment[0]) + abs(prev_seg[1] - segment[1]) == 1:
+                    prev_rect = self.get_rect(prev_seg[0], prev_seg[1])
+                    prev_center = prev_rect.center
+                    pygame.draw.line(self.screen, base_color, prev_center, seg_center, current_radius * 2)
+                    
+            # --- PASS 2: Draw head on top ---
+            if not snake:
+                return
+            segment = snake[0]
+            seg_rect = self.get_rect(segment[0], segment[1])
+            seg_center = seg_rect.center
+            seg_radius = self.block_size // 2 - 1
+
+            dist_to_food = abs(segment[0] - self.food[0]) + abs(segment[1] - self.food[1])
+            is_open = dist_to_food <= 3
+            
+            angle = 0
+            if direction == (1, 0): angle = 0
+            elif direction == (0, -1): angle = 90
+            elif direction == (-1, 0): angle = 180
+            elif direction == (0, 1): angle = 270
+            
+            surf_size = seg_radius * 6
+            head_surf = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
+            center_h = (surf_size//2, surf_size//2)
+            
+            # Draw head base (ellipse)
+            head_rect = pygame.Rect(center_h[0]-seg_radius*1.2, center_h[1]-seg_radius*1.2, seg_radius*2.4, seg_radius*2.4)
+            pygame.draw.ellipse(head_surf, head_color, head_rect)
+            
+            if is_open:
+                # Open mouth (human-like)
+                mouth_rect = pygame.Rect(center_h[0], center_h[1]-seg_radius*0.6, seg_radius, seg_radius*1.2)
+                pygame.draw.ellipse(head_surf, (50,0,0), mouth_rect)
+                pygame.draw.ellipse(head_surf, (255,100,100), mouth_rect, 2)
+                # Upper Teeth
+                pygame.draw.rect(head_surf, (255,255,255), (int(center_h[0]+seg_radius*0.4), int(center_h[1]-seg_radius*0.5), int(seg_radius*0.4), int(seg_radius*0.3)))
+                # Lower Teeth
+                pygame.draw.rect(head_surf, (255,255,255), (int(center_h[0]+seg_radius*0.4), int(center_h[1]+seg_radius*0.2), int(seg_radius*0.4), int(seg_radius*0.3)))
+            else:
+                # Closed mouth
+                mouth_rect = pygame.Rect(int(center_h[0]+seg_radius*0.5), int(center_h[1]-seg_radius*0.4), 4, int(seg_radius*0.8))
+                pygame.draw.ellipse(head_surf, (255,100,100), mouth_rect)
+                # Tongue
+                t_x = int(center_h[0] + seg_radius*0.8)
+                t_y = int(center_h[1])
+                pygame.draw.line(head_surf, (255,50,50), (t_x, t_y), (t_x+10, t_y), 2)
+                pygame.draw.line(head_surf, (255,50,50), (t_x+10, t_y), (t_x+14, t_y-4), 2)
+                pygame.draw.line(head_surf, (255,50,50), (t_x+10, t_y), (t_x+14, t_y+4), 2)
+                
+            # BIG Eyes (drawn last so always on top)
+            eye1 = (int(center_h[0]-seg_radius*0.2), int(center_h[1]-seg_radius*0.55))
+            eye2 = (int(center_h[0]-seg_radius*0.2), int(center_h[1]+seg_radius*0.55))
+            # pygame.draw.circle(head_surf, (255,255,255), eye1, 5)
+            # pygame.draw.circle(head_surf, (255,255,255), eye2, 5)
+            pygame.draw.circle(head_surf, (30,30,30), (eye1[0]+2, eye1[1]), 3)
+            pygame.draw.circle(head_surf, (30,30,30), (eye2[0]+2, eye2[1]), 3)
+            # Eye shine
+            pygame.draw.circle(head_surf, (255,255,255), (eye1[0]+3, eye1[1]-2), 2)
+            pygame.draw.circle(head_surf, (255,255,255), (eye2[0]+3, eye2[1]-2), 2)
+            
+            rotated_head = pygame.transform.rotate(head_surf, angle)
+            self.screen.blit(rotated_head, (seg_center[0] - rotated_head.get_width()//2, seg_center[1] - rotated_head.get_height()//2))
+
         # Draw Snake 1 (Green)
-        for i, segment in enumerate(self.snake1):
-            color = self.color_p1 if i == 0 else (30, 200, 30)
-            pygame.draw.rect(self.screen, color, self.get_rect(segment[0], segment[1]).inflate(-1, -1), border_radius=2)
+        draw_snake(self.snake1, (30, 200, 30), self.color_p1, self.dir1)
             
         # Draw Snake 2 (Blue)
-        for i, segment in enumerate(self.snake2):
-            color = self.color_p2 if i == 0 else (30, 120, 200)
-            pygame.draw.rect(self.screen, color, self.get_rect(segment[0], segment[1]).inflate(-1, -1), border_radius=2)
+        draw_snake(self.snake2, (30, 120, 200), self.color_p2, self.dir2)
             
         # UI Overlay
         if self.state == "START":
