@@ -198,6 +198,7 @@ class ArcadeMenu:
         self.games_dir = os.path.join(get_base_path(), "games")
         self.error_msg = ""
         self.error_timer = 0
+        self.scroll_y = 0
         self.discover_games()
         self.load_assets()
 
@@ -252,35 +253,17 @@ class ArcadeMenu:
     def draw_menu(self):
         screen.fill(BG_COLOR)
         
-        # رسم هدر منو در وسط صفحه تمام صفحه
-        title_surf = self.font_title.render("🎮 OFFLINE ARCADE HUB", True, ACCENT_COLOR)
-        screen.blit(title_surf, (SCREEN_WIDTH // 2 - title_surf.get_width() // 2, 40))
-        
-        # تابلوی امتیازات ریسپانسیو
-        score_box = pygame.Rect(100, 110, SCREEN_WIDTH - 200, 50)
-        pygame.draw.rect(screen, PANEL_COLOR, score_box, border_radius=8)
-        
-        p1_name_display = reshape_persian(self.session.player1_name)
-        p2_name_display = reshape_persian(self.session.player2_name)
-        scores_text = f"SCOREBOARD  |  {reshape_persian(p1_name_display)}: {self.session.scores['player1']}   VS   {reshape_persian(p2_name_display)}: {self.session.scores['player2']}"
-        score_surf = render_persian_text(self.font_score, scores_text, TEXT_COLOR)
-        screen.blit(score_surf, (SCREEN_WIDTH // 2 - score_surf.get_width() // 2, 122))
-        
-        if getattr(self.session, 'is_single_player', False):
-            self.diff_btn_rect = pygame.Rect(SCREEN_WIDTH - 280, 115, 160, 40)
-            # Create hover effect
-            mouse_pos = pygame.mouse.get_pos()
-            hovering = self.diff_btn_rect.collidepoint(mouse_pos)
-            pygame.draw.rect(screen, ACCENT_COLOR if hovering else PANEL_COLOR, self.diff_btn_rect, border_radius=8)
-            pygame.draw.rect(screen, ACCENT_COLOR, self.diff_btn_rect, 2, border_radius=8)
-            diff_text = self.font_score.render(f"Bot Level: {self.session.bot_difficulty.upper()}", True, BG_COLOR if hovering else ACCENT_COLOR)
-            screen.blit(diff_text, (self.diff_btn_rect.centerx - diff_text.get_width() // 2, self.diff_btn_rect.centery - diff_text.get_height() // 2))
+        # Calculate max scrolling
+        cols = 4
+        max_rows = (len(self.available_games) + cols - 1) // cols
+        gap_x, gap_y = 170, 200
+        content_height = max_rows * gap_y
+        max_scroll = min(0, SCREEN_HEIGHT - 240 - content_height - 50)
+        self.scroll_y = max(max_scroll, min(0, self.scroll_y))
         
         # چیدمان شبکه ای آیکون‌ها بر اساس مانیتور تمام صفحه
         start_x = (SCREEN_WIDTH - (4 * 160)) // 2  
-        start_y = 240
-        gap_x, gap_y = 170, 200
-        cols = 4
+        start_y = 240 + self.scroll_y
         
         for index, game in enumerate(self.available_games):
             col = index % cols
@@ -298,10 +281,44 @@ class ArcadeMenu:
                 pygame.draw.rect(screen, PANEL_COLOR, game["rect"].inflate(10, 10), border_radius=10)
             
             screen.blit(game["icon_img"], (x + 10, y + 10))
-            
             text_surf = self.font_game.render(game["title"], True, TEXT_COLOR)
             screen.blit(text_surf, (x + 55 - text_surf.get_width() // 2, y + 110))
             
+        # Draw Top Bar Background to hide scrolled icons
+        pygame.draw.rect(screen, BG_COLOR, (0, 0, SCREEN_WIDTH, 180))
+        
+        # رسم هدر منو در وسط صفحه تمام صفحه
+        title_surf = self.font_title.render("🎮 OFFLINE ARCADE HUB", True, ACCENT_COLOR)
+        screen.blit(title_surf, (SCREEN_WIDTH // 2 - title_surf.get_width() // 2, 40))
+        
+        # تابلوی امتیازات ریسپانسیو
+        score_box = pygame.Rect(100, 110, SCREEN_WIDTH - 200, 50)
+        pygame.draw.rect(screen, PANEL_COLOR, score_box, border_radius=8)
+        
+        p1_name_display = reshape_persian(self.session.player1_name)
+        p2_name_display = reshape_persian(self.session.player2_name)
+        scores_text = f"SCOREBOARD  |  {reshape_persian(p1_name_display)}: {self.session.scores['player1']}   VS   {reshape_persian(p2_name_display)}: {self.session.scores['player2']}"
+        score_surf = render_persian_text(self.font_score, scores_text, TEXT_COLOR)
+        screen.blit(score_surf, (SCREEN_WIDTH // 2 - score_surf.get_width() // 2, 122))
+        
+        # Mode toggle button
+        self.mode_btn_rect = pygame.Rect(SCREEN_WIDTH - 460, 115, 160, 40)
+        mouse_pos = pygame.mouse.get_pos()
+        hovering_mode = self.mode_btn_rect.collidepoint(mouse_pos)
+        pygame.draw.rect(screen, ACCENT_COLOR if hovering_mode else PANEL_COLOR, self.mode_btn_rect, border_radius=8)
+        pygame.draw.rect(screen, ACCENT_COLOR, self.mode_btn_rect, 2, border_radius=8)
+        mode_str = "1 Player" if getattr(self.session, 'is_single_player', False) else "2 Players"
+        mode_text = self.font_score.render(f"Mode: {mode_str}", True, BG_COLOR if hovering_mode else ACCENT_COLOR)
+        screen.blit(mode_text, (self.mode_btn_rect.centerx - mode_text.get_width() // 2, self.mode_btn_rect.centery - mode_text.get_height() // 2))
+
+        if getattr(self.session, 'is_single_player', False):
+            self.diff_btn_rect = pygame.Rect(SCREEN_WIDTH - 280, 115, 160, 40)
+            hovering = self.diff_btn_rect.collidepoint(mouse_pos)
+            pygame.draw.rect(screen, ACCENT_COLOR if hovering else PANEL_COLOR, self.diff_btn_rect, border_radius=8)
+            pygame.draw.rect(screen, ACCENT_COLOR, self.diff_btn_rect, 2, border_radius=8)
+            diff_text = self.font_score.render(f"Bot Level: {self.session.bot_difficulty.upper()}", True, BG_COLOR if hovering else ACCENT_COLOR)
+            screen.blit(diff_text, (self.diff_btn_rect.centerx - diff_text.get_width() // 2, self.diff_btn_rect.centery - diff_text.get_height() // 2))
+        
         if self.error_msg and pygame.time.get_ticks() < self.error_timer:
             msg_surf = render_persian_text(self.font_title, reshape_persian(self.error_msg), (255, 50, 50))
             screen.blit(msg_surf, (SCREEN_WIDTH // 2 - msg_surf.get_width() // 2, SCREEN_HEIGHT - 100))
@@ -309,7 +326,7 @@ class ArcadeMenu:
             self.error_msg = ""
 
     def launch_game(self, game_id):
-        supported_single_player = ["tic_tac_toe", "dots_and_boxes", "chess", "snake_duel", "backgammon", "dart", "pacman_duel", "bomberman", "connect_four"]
+        supported_single_player = ["tic_tac_toe", "dots_and_boxes", "chess", "snake_duel", "backgammon", "pacman_duel", "bomberman", "connect_four"]
         if getattr(self.session, 'is_single_player', False) and game_id not in supported_single_player:
             self.error_msg = "This game doesn't have bot"
             self.error_timer = pygame.time.get_ticks() + 3000
@@ -351,21 +368,9 @@ class ArcadeMenu:
                  from games.tic_tac_toe import game as tic_tac_toe_game
                  active_game = tic_tac_toe_game.TicTacToe(self.screen, self.session)
             
-            elif game_id == "dart":
-                 from games.dart import game as dart_game
-                 active_game = dart_game.Dart(self.screen, self.session)
-            
             elif game_id == "battleship":
                  from games.battleship import game as battleship_game
                  active_game = battleship_game.Battleship(self.screen, self.session)
-            
-            elif game_id == "bowling":
-                 from games.bowling import game as bowling_game
-                 active_game = bowling_game.Bowling(self.screen, self.session)
-            
-            elif game_id == "billiards":
-                 from games.billiards import game as billiards_game
-                 active_game = billiards_game.Billiards(self.screen, self.session)
                  
             elif game_id == "pacman_duel":
                  from games.pacman_duel import game as pacman_duel_game
@@ -378,6 +383,14 @@ class ArcadeMenu:
             elif game_id == "connect_four":
                  from games.connect_four import game as connect_four_game
                  active_game = connect_four_game.ConnectFour(self.screen, self.session)
+                 
+            elif game_id == "lumberjack_battle":
+                 from games.lumberjack_battle import game as lumberjack_battle_game
+                 active_game = lumberjack_battle_game.LumberjackBattle(self.screen, self.session)
+
+            elif game_id == "typing_race":
+                 from games.typing_race import game as typing_race_game
+                 active_game = typing_race_game.TypingRace(self.screen, self.session)
             
             # اگر بازی لود شد، حلقه اجرای بازی را شروع کن
             if active_game:
@@ -545,9 +558,22 @@ def main():
                 if event.key == pygame.K_ESCAPE:  # زدن دکمه اسکیپ در منو برنامه را می‌بندد
                     pygame.quit()
                     sys.exit()
+                elif event.key == pygame.K_UP:
+                    menu.scroll_y += 50
+                elif event.key == pygame.K_DOWN:
+                    menu.scroll_y -= 50
+                    
+            if event.type == pygame.MOUSEWHEEL:
+                menu.scroll_y += event.y * 30
                 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if getattr(session, 'is_single_player', False) and hasattr(menu, 'diff_btn_rect') and menu.diff_btn_rect.collidepoint(event.pos):
+                if hasattr(menu, 'mode_btn_rect') and menu.mode_btn_rect.collidepoint(event.pos):
+                    session.is_single_player = not session.is_single_player
+                    if session.is_single_player:
+                        session.player2_name = f"Bot ({session.bot_difficulty.capitalize()})"
+                    else:
+                        session.player2_name = "Player 2"
+                elif getattr(session, 'is_single_player', False) and hasattr(menu, 'diff_btn_rect') and menu.diff_btn_rect.collidepoint(event.pos):
                     diffs = ["low", "medium", "hard"]
                     idx = diffs.index(session.bot_difficulty)
                     session.bot_difficulty = diffs[(idx + 1) % len(diffs)]
