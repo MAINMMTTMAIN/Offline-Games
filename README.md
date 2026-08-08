@@ -184,10 +184,6 @@ To run the game from the source code:
 ## 🗺️ Roadmap (Upcoming Features)
 I am actively working on adding more games and features. Contributions are highly welcome!
 
-[x] 🤖 Add Single-Player mode (AI Bots) for Chess, Tic-Tac-Toe,dots and boxes and Snake Duel.
-
-[x] 🚢 Battleship
-
 [ ] 🎳 Bowling
 
 [ ] 🎱 Billiards
@@ -198,13 +194,6 @@ I am actively working on adding more games and features. Contributions are highl
 
 [ ] 🛸 Space Shooter (1v1)
 
-[x] ᗧ•••ᗣ Two-Player Pac-Man
-
-[x] 🎨 Improve graphics and animations for Snakes and Ladders.
-
-[x] 🔴🟡 Connect Four
-
-[x] 💣🔥 Bomberman
 
 ## 🤝 Contributing
 
