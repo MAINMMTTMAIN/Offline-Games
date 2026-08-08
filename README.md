@@ -41,6 +41,8 @@ A beautifully designed collection of classic offline multiplayer games built wit
 | ![pacman](assets/pacman.png) | ![Memory](assets/MemoryCardGame.png) |
 | **Dots and Boxes** | **Snake Duel** |
 | ![Dots](assets/DotsAndBoxes.png) | ![Snake](assets/Snakeduel.png) |
+| **Battleship** | **Lumberjack** |
+| ![snakeandladders](assets/battleship.png) | ![tictactoe](assets/lumberjack_battle.png) |
 | **SnakeLadders** | **Tic Tac Toe** |
 | ![snakeandladders](assets/SnakeLadders.png) | ![tictactoe](assets/tictactoe.png) |
 
