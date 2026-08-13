@@ -84,6 +84,7 @@ class LumberjackBattle(BaseGame):
         else:
             self.players["p2"]["is_bot"] = False
             
+        self.waiting_to_start = True
         self.start_ticks = pygame.time.get_ticks()
         self.game_over = False
 
@@ -181,21 +182,25 @@ class LumberjackBattle(BaseGame):
                 if self.game_over:
                     if event.key == pygame.K_SPACE:
                         self.reset_game()
+                elif self.waiting_to_start:
+                    if event.key == pygame.K_SPACE:
+                        self.waiting_to_start = False
+                        self.start_ticks = pygame.time.get_ticks()
                 else:
                     if not self.players["p1"]["dead"]:
-                        if event.key == pygame.K_LEFT:
+                        if event.key == pygame.K_a:
                             self.chop("p1", -1)
-                        elif event.key == pygame.K_RIGHT:
+                        elif event.key == pygame.K_d:
                             self.chop("p1", 1)
                             
                     if not self.players["p2"]["dead"] and not self.players["p2"]["is_bot"]:
-                        if event.key == pygame.K_a:
+                        if event.key == pygame.K_LEFT:
                             self.chop("p2", -1)
-                        elif event.key == pygame.K_d:
+                        elif event.key == pygame.K_RIGHT:
                             self.chop("p2", 1)
 
     def update(self):
-        if self.game_over: return
+        if self.game_over or self.waiting_to_start: return
             
         current_ticks = pygame.time.get_ticks()
         elapsed = (current_ticks - self.start_ticks) / 1000.0
@@ -471,3 +476,34 @@ class LumberjackBattle(BaseGame):
             surf = font_large.render(msg, True, c)
             self.screen.blit(surf, (self.w//2 - surf.get_width()//2, self.h//2 - 100))
             self.draw_persian_text("Press SPACE to play again", (255, 255, 255), (self.w//2 - 120, self.h//2 + 20))
+            
+        if self.waiting_to_start and not self.game_over:
+            overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            self.screen.blit(overlay, (0, 0))
+            
+            font_title = pygame.font.Font(resource_path("Vazirmatn-VariableFont_wght.ttf"), 48)
+            font_keys = pygame.font.Font(resource_path("Vazirmatn-VariableFont_wght.ttf"), 32)
+            
+            # Left player guide
+            p1_name = reshape_persian(self.players["p1"]["name"])
+            p1_title = font_title.render(p1_name, True, self.players["p1"]["color"])
+            self.screen.blit(p1_title, (self.w//4 - p1_title.get_width()//2, self.h//2 - 120))
+            
+            p1_keys = font_keys.render("A = Left   |   D = Right", True, (255, 255, 255))
+            self.screen.blit(p1_keys, (self.w//4 - p1_keys.get_width()//2, self.h//2 - 40))
+            
+            # Right player guide
+            p2_name = reshape_persian(self.players["p2"]["name"])
+            p2_title = font_title.render(p2_name, True, self.players["p2"]["color"])
+            self.screen.blit(p2_title, (3*self.w//4 - p2_title.get_width()//2, self.h//2 - 120))
+            
+            if self.players["p2"]["is_bot"]:
+                p2_keys = font_keys.render("Bot Player", True, (255, 255, 255))
+            else:
+                p2_keys = font_keys.render("<- Left   |   Right ->", True, (255, 255, 255))
+            self.screen.blit(p2_keys, (3*self.w//4 - p2_keys.get_width()//2, self.h//2 - 40))
+            
+            # Start instruction
+            start_msg = font_keys.render("Press SPACE to Start", True, (0, 255, 0))
+            self.screen.blit(start_msg, (self.w//2 - start_msg.get_width()//2, self.h//2 + 80))
