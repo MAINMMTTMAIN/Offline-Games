@@ -32,13 +32,27 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * 🪓🌲 Lumberjack Battle
   * ⌨👨‍💻 Typing Race
   * 🎱 Billiards
+  * ⬜⬜⬜⬜⬜⬜⬛⬛⬛⬛⬛⬛⬛⬛⬜⬜⬜⬜⬜
+⬜⬜⬜⬜⬛⬛🟨🟨🟨🟨🟨⬛⬜⬜⬛⬜⬜⬜⬜
+⬜⬜⬜⬛🟨🟨🟨🟨🟨🟨⬛⬜⬜⬜⬜⬛⬜⬜⬜
+⬜⬜⬛🟨🟨🟨🟨🟨🟨🟨⬛⬜⬜⬜⬛⬜⬛⬜⬜
+⬜⬛🟨🟨🟨🟨🟨🟨🟨🟨⬛⬜⬜⬜⬛⬜⬛⬜⬜
+⬜⬛⬛⬛⬛⬛🟨🟨🟨🟨🟨⬛⬜⬜⬜⬜⬛⬜⬜
+⬛🟨🟨🟨🟨🟨⬛🟨🟨🟨🟨🟨⬛⬛⬛⬛⬛⬛⬜
+⬛🟨🟨🟨🟨🟨⬛🟨🟨🟨🟨⬛🟥🟥🟥🟥🟥🟥⬛
+⬜⬛⬛⬛⬛⬛🟧🟧🟧🟧⬛🟥⬛⬛⬛⬛⬛⬛⬜
+⬜⬜⬛🟧🟧🟧🟧🟧🟧🟧🟧⬛🟥🟥🟥🟥🟥⬛⬜
+⬜⬜⬜⬛⬛🟧🟧🟧🟧🟧🟧🟧⬛⬛⬛⬛⬛⬜⬜
+⬜⬜⬜⬜⬜⬛⬛⬛⬛⬛⬛⬛⬜⬜⬜⬜⬜⬜⬜
 
 ## 📸 Game Previews
 
-| Bomberman | Backgammon |
+| **Billiards** | **FlappyBirds** |
 | :---: | :---: |
+| ![billiards](assets/billiards.png) | ![flappybird](assets/flappybird.png) |
+| **Bomberman** | **Backgammon** |
 | ![bomberman](assets/bomberman.png) | ![backgammon](assets/backgammon.png) |
-| Pacman Duel | Memory Cards |
+| **Pacman Duel** | **Memory Cards** |
 | ![pacman](assets/pacman.png) | ![Memory](assets/MemoryCardGame.png) |
 | **Dots and Boxes** | **Snake Duel** |
 | ![Dots](assets/DotsAndBoxes.png) | ![Snake](assets/Snakeduel.png) |
