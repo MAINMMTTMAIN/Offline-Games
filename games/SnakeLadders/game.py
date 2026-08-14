@@ -1,9 +1,13 @@
 import pygame
 import random
 import math
+import sys
+import os
 from base_game import BaseGame
 from persian_utils import render_persian_text, reshape_persian
 from main import resource_path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 class Snakeladders(BaseGame):
     """Custom Cyberpunk Snakes and Ladders with high-end animations and manual piece activation."""
     
@@ -43,7 +47,28 @@ class Snakeladders(BaseGame):
         self.snakes  = {17: 4, 43: 18, 54: 31, 67: 46, 89: 48, 93: 71, 98: 79}
 
         self._layout()
+        self._init_sounds()
         self.reset_game()
+
+    def _init_sounds(self):
+        """Initialise all procedural sounds for the game."""
+        self.snd_dice = self.snd_move = self.snd_ladder = self.snd_snake = self.snd_win = None
+        try:
+            pygame.mixer.init(frequency=44100, channels=2)
+            sdir = resource_path(os.path.join("assets", "sounds"))
+            self.snd_dice   = pygame.mixer.Sound(os.path.join(sdir, "dice.wav"))
+            self.snd_move   = pygame.mixer.Sound(os.path.join(sdir, "move.wav"))
+            self.snd_ladder = pygame.mixer.Sound(os.path.join(sdir, "ladder.wav"))
+            self.snd_snake  = pygame.mixer.Sound(os.path.join(sdir, "snake.wav"))
+            self.snd_win    = pygame.mixer.Sound(os.path.join(sdir, "win.wav"))
+        except Exception:
+            pass
+
+    def _play(self, snd):
+        try:
+            if snd: snd.play()
+        except Exception:
+            pass
 
     def _layout(self):
         W, H = self.width, self.height
@@ -91,6 +116,7 @@ class Snakeladders(BaseGame):
 
     def _roll(self):
         if self.state != "ROLL": return
+        self._play(self.snd_dice)
         self.state = "ANIMATING_DICE"
         self.anim_frames_left = 15
 
@@ -145,6 +171,9 @@ class Snakeladders(BaseGame):
         # ۲. انیمیشن حرکت دونه‌دونه خانه‌ها
         elif self.state == "MOVING_STEPS":
             if self.anim_step_index < len(self.anim_path):
+                # Play click every 25 frames (= each cell transition)
+                if self.anim_step_index % 25 == 0:
+                    self._play(self.snd_move)
                 self.anim_step_index += 2  # سرعت حرکت بین خانه‌ها
             else:
                 # پایان حرکت عادی، حالا بررسی مار یا نردبان
@@ -188,6 +217,11 @@ class Snakeladders(BaseGame):
         self.anim_step_index = 0
         self.message = "Sssnake bite!" if is_snake else "Climbing Ladder!"
         self.state = "MOVING_SPECIAL"
+        # Play appropriate sound
+        if is_snake:
+            self._play(self.snd_snake)
+        else:
+            self._play(self.snd_ladder)
 
     def _finish_turn(self):
         p_idx = self.cur_p - 1
@@ -196,6 +230,7 @@ class Snakeladders(BaseGame):
             self.winner = self.cur_p
             key = "player1" if self.cur_p == 1 else "player2"
             self.session.scores[key] += 1
+            self._play(self.snd_win)
             return
             
         self.state = "ROLL"
