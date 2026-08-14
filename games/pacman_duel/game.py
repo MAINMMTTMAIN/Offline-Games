@@ -604,6 +604,13 @@ class PacmanDuel(BaseGame):
                 self.running = False
             elif ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_ESCAPE:
+                    # Stop all sounds before exiting so they don't bleed into menu
+                    try:
+                        if getattr(self, 'snd_start', None): self.snd_start.stop()
+                        if getattr(self, 'snd_power', None): self.snd_power.stop()
+                        if getattr(self, 'snd_chomp0', None): self.snd_chomp0.stop()
+                        if getattr(self, 'snd_chomp1', None): self.snd_chomp1.stop()
+                    except: pass
                     self.running = False
                 if self.state == "GAME_OVER" and ev.key == pygame.K_r:
                     self._init_game(full_reset=True)
