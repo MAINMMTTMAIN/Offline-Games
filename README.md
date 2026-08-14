@@ -202,6 +202,12 @@ To run the game from the source code:
    ```bash
    python main.py
    ```
+   or
+   
+   ```bash
+   py main.py
+   ```
+   
 ## 🗺️ Roadmap (Upcoming Features)
 I am actively working on adding more games and features. Contributions are highly welcome!
 
