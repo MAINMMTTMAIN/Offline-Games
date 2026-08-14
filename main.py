@@ -4,6 +4,8 @@ import os
 import importlib
 from persian_utils import render_persian_text, reshape_persian
 
+Window_Icon = pygame.image.load("myicon.ico")
+pygame.display.set_icon(Window_Icon)
 
 def resource_path(relative_path):
     """ پیدا کردن مسیر صحیح فایل‌ها در حالت عادی و حالت exe """
@@ -257,7 +259,7 @@ class ArcadeMenu:
         cols = 4
         max_rows = (len(self.available_games) + cols - 1) // cols
         gap_x, gap_y = 170, 200
-        content_height = max_rows * gap_y
+        content_height = max_rows * gap_y + 60 # Added 60 for the footer
         max_scroll = min(0, SCREEN_HEIGHT - 240 - content_height - 50)
         self.scroll_y = max(max_scroll, min(0, self.scroll_y))
         
@@ -283,6 +285,11 @@ class ArcadeMenu:
             screen.blit(game["icon_img"], (x + 10, y + 10))
             text_surf = self.font_game.render(game["title"], True, TEXT_COLOR)
             screen.blit(text_surf, (x + 55 - text_surf.get_width() // 2, y + 110))
+            
+        # Draw Footer
+        footer_y = start_y + max_rows * gap_y + 20
+        footer_surf = self.font_game.render("Made with love by MMTT", True, ACCENT_COLOR)
+        screen.blit(footer_surf, (SCREEN_WIDTH // 2 - footer_surf.get_width() // 2, footer_y))
             
         # Draw Top Bar Background to hide scrolled icons
         pygame.draw.rect(screen, BG_COLOR, (0, 0, SCREEN_WIDTH, 180))
@@ -326,7 +333,7 @@ class ArcadeMenu:
             self.error_msg = ""
 
     def launch_game(self, game_id):
-        supported_single_player = ["tic_tac_toe", "dots_and_boxes", "chess", "snake_duel", "backgammon", "pacman_duel", "bomberman", "connect_four"]
+        supported_single_player = ["tic_tac_toe", "dots_and_boxes", "chess", "snake_duel", "backgammon", "pacman_duel", "bomberman", "connect_four", "billiards", "pong", "flappy_bird"]
         if getattr(self.session, 'is_single_player', False) and game_id not in supported_single_player:
             self.error_msg = "This game doesn't have bot"
             self.error_timer = pygame.time.get_ticks() + 3000
@@ -391,6 +398,18 @@ class ArcadeMenu:
             elif game_id == "typing_race":
                  from games.typing_race import game as typing_race_game
                  active_game = typing_race_game.TypingRace(self.screen, self.session)
+                 
+            elif game_id == "billiards":
+                 from games.billiards import game as billiards_game
+                 active_game = billiards_game.Billiards(self.screen, self.session)
+                 
+            elif game_id == "pong":
+                 from games.pong import game as pong_game
+                 active_game = pong_game.Pong(self.screen, self.session)
+                 
+            elif game_id == "flappy_bird":
+                 from games.flappy_bird import game as flappy_bird_game
+                 active_game = flappy_bird_game.FlappyBird(self.screen, self.session)
             
             # اگر بازی لود شد، حلقه اجرای بازی را شروع کن
             if active_game:
