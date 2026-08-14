@@ -1,3 +1,4 @@
 pygame
 arabic-reshaper
 python-bidi
+pymunk
