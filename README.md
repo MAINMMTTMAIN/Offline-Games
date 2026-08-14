@@ -32,18 +32,8 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * 🪓🌲 Lumberjack Battle
   * ⌨👨‍💻 Typing Race
   * 🎱 Billiards
-  * ⬜⬜⬜⬜⬜⬜⬛⬛⬛⬛⬛⬛⬛⬛⬜⬜⬜⬜⬜
-⬜⬜⬜⬜⬛⬛🟨🟨🟨🟨🟨⬛⬜⬜⬛⬜⬜⬜⬜
-⬜⬜⬜⬛🟨🟨🟨🟨🟨🟨⬛⬜⬜⬜⬜⬛⬜⬜⬜
-⬜⬜⬛🟨🟨🟨🟨🟨🟨🟨⬛⬜⬜⬜⬛⬜⬛⬜⬜
-⬜⬛🟨🟨🟨🟨🟨🟨🟨🟨⬛⬜⬜⬜⬛⬜⬛⬜⬜
-⬜⬛⬛⬛⬛⬛🟨🟨🟨🟨🟨⬛⬜⬜⬜⬜⬛⬜⬜
-⬛🟨🟨🟨🟨🟨⬛🟨🟨🟨🟨🟨⬛⬛⬛⬛⬛⬛⬜
-⬛🟨🟨🟨🟨🟨⬛🟨🟨🟨🟨⬛🟥🟥🟥🟥🟥🟥⬛
-⬜⬛⬛⬛⬛⬛🟧🟧🟧🟧⬛🟥⬛⬛⬛⬛⬛⬛⬜
-⬜⬜⬛🟧🟧🟧🟧🟧🟧🟧🟧⬛🟥🟥🟥🟥🟥⬛⬜
-⬜⬜⬜⬛⬛🟧🟧🟧🟧🟧🟧🟧⬛⬛⬛⬛⬛⬜⬜
-⬜⬜⬜⬜⬜⬛⬛⬛⬛⬛⬛⬛⬜⬜⬜⬜⬜⬜⬜
+  * 🐤🕹️ FlappyBirds
+  * 🏓 Pong
 
 ## 📸 Game Previews
 
