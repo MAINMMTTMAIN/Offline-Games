@@ -31,6 +31,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * 💣🔥 Bomberman
   * 🪓🌲 Lumberjack Battle
   * ⌨👨‍💻 Typing Race
+  * 🎱 Billiards
 
 ## 📸 Game Previews
 
@@ -185,8 +186,6 @@ To run the game from the source code:
 I am actively working on adding more games and features. Contributions are highly welcome!
 
 [ ] 🎳 Bowling
-
-[ ] 🎱 Billiards
 
 [ ] ✂️ Rock Paper Scissors
 
