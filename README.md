@@ -15,7 +15,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
 * **Unified UI/UX:** A sleek arcade menu to select and launch games seamlessly.
 * **Local Multiplayer:** Grab a friend and play together on the same keyboard/screen.
 * **Persian Language Support:** Custom utility rendering for right-to-left fonts.
-* **Single-Player AI:** Challenge intelligent bots in Chess, Tic-Tac-Toe, Dots and Boxes, Snake Duel, Pac-Man, Backgammon, Connect Four, and Bomberman.
+* **Single-Player AI:** Challenge intelligent bots in Chess, Tic-Tac-Toe, Dots and Boxes, Snake Duel, Pac-Man, Backgammon, Connect Four, Bomberman, Pong, Flappy Bird, and Billiards.
 * **Current Games Included:**
   * ♔♕♖♗♘♙ Chess
   * ⚅🎲 Backgammon
@@ -31,13 +31,13 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * 💣🔥 Bomberman
   * 🪓🌲 Lumberjack Battle
   * ⌨👨‍💻 Typing Race
-  * 🎱 Billiards
+  * 🎱 Billiards (8-Ball with physics)
   * 🐤🕹️ FlappyBirds
-  * 🏓 Pong
+  * 🏓 Pong (with power-ups)
 
 ## 📸 Game Previews
 
-| **Billiards** | **FlappyBirds** |
+| **Billiards** | **Flappy Birds** |
 | :---: | :---: |
 | ![billiards](assets/billiards.png) | ![flappybird](assets/flappybird.png) |
 | **Bomberman** | **Backgammon** |
@@ -92,7 +92,23 @@ Offline_Games/
 │   
 └───games/                            # Package containing all core game modules
     │   __init__.py
-    │   
+    │
+    ├───billiards/
+    │   │ game.py
+    │   │ icon.png
+    │   │
+    │   └───assets/
+    │       ├───images/          # ball_1.png ... ball_16.png, cue.png, table.png
+    │       └───sounds/          # cue.wav, cushion.wav, hit.wav, pocket.wav
+    │
+    ├───flappy_bird/
+    │   │ game.py
+    │   │ icon.png
+    │
+    ├───pong/
+    │   │ game.py
+    │   │ icon.png
+    │
     ├───backgammon/
     │       game.py                   # Backgammon logic and board renderer
     │       Tqi7Z.png                 # Game icon asset
