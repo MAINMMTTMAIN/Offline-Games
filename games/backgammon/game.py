@@ -1,8 +1,12 @@
 import pygame
 import random
+import sys
+import os
 from base_game import BaseGame
 from persian_utils import render_persian_text, reshape_persian
 from main import resource_path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 
 class Backgammon(BaseGame):
     """Two-player Backgammon with standard rules and cyberpunk visual theme."""
@@ -51,6 +55,26 @@ class Backgammon(BaseGame):
         
         self.reset_game()
         self.state = "INTRO"
+        self._init_sounds()
+
+    def _init_sounds(self):
+        self.snd_dice = self.snd_move = self.snd_hit = self.snd_bearoff = self.snd_win = None
+        try:
+            pygame.mixer.init(frequency=44100, channels=2)
+            sdir = resource_path(os.path.join("assets", "sounds"))
+            self.snd_dice    = pygame.mixer.Sound(os.path.join(sdir, "dice.wav"))
+            self.snd_move    = pygame.mixer.Sound(os.path.join(sdir, "move.wav"))
+            self.snd_hit     = pygame.mixer.Sound(os.path.join(sdir, "hit.wav"))
+            self.snd_bearoff = pygame.mixer.Sound(os.path.join(sdir, "bearoff.wav"))
+            self.snd_win     = pygame.mixer.Sound(os.path.join(sdir, "win.wav"))
+        except Exception:
+            pass
+
+    def _play(self, snd):
+        try:
+            if snd: snd.play()
+        except Exception:
+            pass
     # ═════════════════════════════════════════════════════════════════════
     # Rules
     # ═════════════════════════════════════════════════════════════════════
@@ -285,15 +309,21 @@ class Backgammon(BaseGame):
         # Place at destination
         if to_pt == 0:    # P1 bears off
             self.borne_off[0] += 1
+            self._play(self.snd_bearoff)
         elif to_pt == 25: # P2 bears off
             self.borne_off[1] += 1
+            self._play(self.snd_bearoff)
         else:
             di = to_pt - 1
             # Hit detection
             if self.cur_p == 1 and self.board[di] == -1:
                 self.board[di] = 0; self.bar[1] += 1
+                self._play(self.snd_hit)
             elif self.cur_p == 2 and self.board[di] == 1:
                 self.board[di] = 0; self.bar[0] += 1
+                self._play(self.snd_hit)
+            else:
+                self._play(self.snd_move)
             if self.cur_p == 1: self.board[di] += 1
             else:               self.board[di] -= 1
 
@@ -319,6 +349,7 @@ class Backgammon(BaseGame):
         self.winner = p
         key = "player1" if p == 1 else "player2"
         self.session.scores[key] += 1
+        self._play(self.snd_win)
 
     def _end_turn(self):
         self.cur_p      = 2 if self.cur_p == 1 else 1
@@ -332,6 +363,7 @@ class Backgammon(BaseGame):
     def _roll(self):
         d1 = random.randint(1, 6)
         d2 = random.randint(1, 6)
+        self._play(self.snd_dice)
         self.dice     = [d1, d1, d1, d1] if d1 == d2 else [d1, d2]
         self.state    = "MOVE"
         self.selected = None
