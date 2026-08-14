@@ -1,9 +1,11 @@
 import os
 import sys
 import pygame
-import chess  # کتابخانه مدیریت قوانین شطرنج
+import chess
 from persian_utils import render_persian_text, reshape_persian
 from main import resource_path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 # اضافه کردن مسیر پوشه اصلی پروژه به پایتون
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from base_game import BaseGame
@@ -65,6 +67,25 @@ class Chess(BaseGame):
         # بارگذاری تصاویر مهره‌ها
         self.pieces_images = {}
         self.load_pieces()
+        # صداها
+        self._init_sounds()
+
+    def _init_sounds(self):
+        self.snd_move = self.snd_capture = self.snd_defeat = None
+        try:
+            pygame.mixer.init(frequency=44100, channels=2)
+            sdir = resource_path(os.path.join("assets", "sounds"))
+            self.snd_move    = pygame.mixer.Sound(os.path.join(sdir, "move.mp3"))
+            self.snd_capture = pygame.mixer.Sound(os.path.join(sdir, "capture.mp3"))
+            self.snd_defeat  = pygame.mixer.Sound(os.path.join(sdir, "loss.mp3"))
+        except Exception:
+            pass
+
+    def _play(self, snd):
+        try:
+            if snd: snd.play()
+        except Exception:
+            pass
 
     def load_pieces(self):
         # آدرس‌دهی درست با استفاده از تابع resource_path که از main وارد کردیم
@@ -197,7 +218,11 @@ class Chess(BaseGame):
             # ثبت متن سان (SAN) حرکت قبل از اعمال روی صفحه برای پنل راست
             move_san = self.board.san(move)
             self.move_history.append(move_san)
-            
+            # صدا: capture یا حرکت ساده
+            if self.board.is_capture(move):
+                self._play(self.snd_capture)
+            else:
+                self._play(self.snd_move)
             # انجام حرکت
             self.board.push(move)
             self.last_move = move
@@ -232,7 +257,9 @@ class Chess(BaseGame):
                     self.session.scores["player2"] += 1
             else:
                 self.winner_msg = "Draw / Stalemate 🤝"
-                
+
+            if not self.score_added:
+                self._play(self.snd_defeat)
             self.score_added = True
 
     def reset_game(self):
@@ -396,9 +423,14 @@ class Chess(BaseGame):
         if move:
             move_san = self.board.san(move)
             self.move_history.append(move_san)
+            if self.board.is_capture(move):
+                self._play(self.snd_capture)
+            else:
+                self._play(self.snd_move)
             self.board.push(move)
             self.last_move = move
             self.check_game_status()
+
 
     def minimax_simple(self, depth, alpha, beta, is_maximizing):
         if depth == 0 or self.board.is_game_over():
