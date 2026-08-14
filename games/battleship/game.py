@@ -9,6 +9,7 @@ from base_game import BaseGame
 from persian_utils import reshape_persian, render_persian_text
 from main import resource_path
 
+
 GRID_W, GRID_H = 10, 10
 CELL = 46
 
@@ -64,6 +65,24 @@ class Battleship(BaseGame):
 
         self._full_reset()
         pygame.display.set_caption("Battleship")
+        self._init_sounds()
+
+    def _init_sounds(self):
+        self.snd_hit  = self.snd_sink = self.snd_miss = None
+        try:
+            pygame.mixer.init(frequency=44100, channels=2)
+            sdir = resource_path(os.path.join("assets", "sounds"))
+            self.snd_hit  = pygame.mixer.Sound(os.path.join(sdir, "water_hit.wav"))
+            self.snd_sink = pygame.mixer.Sound(os.path.join(sdir, "sink.wav"))
+            self.snd_miss = pygame.mixer.Sound(os.path.join(sdir, "water_miss.wav"))
+        except Exception:
+            pass
+
+    def _play(self, snd):
+        try:
+            if snd: snd.play()
+        except Exception:
+            pass
 
     # ──────────────────── full reset ────────────────────
     def _full_reset(self):
@@ -162,11 +181,17 @@ class Battleship(BaseGame):
             board[r][c]   = 'X'
             self.extra_turn = True
             # Check sunk
+            sunk = False
             for ship in ships:
                 if (r, c) in ship["cells"]:
                     if all(board[sr][sc] == 'X' for sr, sc in ship["cells"]):
                         self.msg       = f"🚢 {ship['name']} sunk!"
                         self.msg_timer = pygame.time.get_ticks() + 1800
+                        sunk = True
+            if sunk:
+                self._play(self.snd_sink)
+            else:
+                self._play(self.snd_hit)
             # Check win
             if all(board[sr][sc] == 'X' for ship in ships for sr, sc in ship["cells"]):
                 self.game_over = True
@@ -179,6 +204,7 @@ class Battleship(BaseGame):
             self.extra_turn = False
             self.msg       = "Miss!"
             self.msg_timer = pygame.time.get_ticks() + 1000
+            self._play(self.snd_miss)
 
     # ──────────────────── ship drawing ────────────────────
     def _draw_ship_graphic(self, ship, ox, oy, alpha=255):
