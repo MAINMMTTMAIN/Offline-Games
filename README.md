@@ -32,7 +32,7 @@ A beautifully designed collection of classic offline multiplayer games built wit
   * 🪓🌲 Lumberjack Battle
   * ⌨👨‍💻 Typing Race
   * 🎱 Billiards (8-Ball with physics)
-  * 🐤🕹️ FlappyBirds
+  * 🐤🕹️ Flappy Birds
   * 🏓 Pong (with power-ups)
 
 ## 📸 Game Previews
