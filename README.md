@@ -81,7 +81,7 @@ I have implemented intelligent, custom-built AI agents for several major games t
 ```text
 Offline_Games/
 │   assets/
-│   | sounds/
+│   ├───sounds/
 │   base_game.py                      # Base class for game structure blueprint
 │   main.py                           # Main application entry point & Arcade Hub menu
 │   myicon.ico                        # Main application icon
