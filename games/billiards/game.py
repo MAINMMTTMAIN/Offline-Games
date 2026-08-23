@@ -49,7 +49,13 @@ class Billiards(BaseGame):
         
         self.bot_timer = 0
         self.bot_target_dir = None
+        self.bot_start_dir = pymunk.Vec2d(1, 0)
         self.bot_target_force = 0
+        
+        # Ball-in-hand preview for bot
+        self.bot_place_pos = None        # where the bot will place the cue ball
+        self.bot_place_timer = 0         # ticks when preview started
+        self.bot_placing = False         # True while showing preview before placing
         
         self.load_assets()
         
@@ -127,21 +133,34 @@ class Billiards(BaseGame):
         self.space.on_collision(1, 1, begin=self.ball_collision_snd)
         self.space.on_collision(1, 2, begin=self.cushion_collision_snd)
 
-        rack_ids = [1, 9, 2, 10, 8, 3, 4, 11, 5, 12, 13, 6, 14, 7, 15]
-        
-        idx = 0
-        rows = 5
-        start_x = 250 + self.offset_x
-        start_y = 267 + self.offset_y
-        for col in range(5):
-            for row in range(rows):
-                pos = (start_x + (col * (self.dia + 1)), start_y + (row * (self.dia + 1)) + (col * self.dia / 2))
-                ball_id = rack_ids[idx]
-                idx += 1
-                b = self.create_ball(self.dia/2, pos, ball_id)
+        # Standard BCA/WPA rack: 8-ball in center (row 3, middle position)
+        # Triangle (5 columns, apex at left):
+        #  col0: [1]
+        #  col1: [2][9]
+        #  col2: [3][8][10]  <- 8 in the middle slot
+        #  col3: [4][11][5][12]
+        #  col4: [13][6][14][7][15]
+        # Each column is centered vertically around the table mid-line.
+        rack_cols = [
+            [1],
+            [2, 9],
+            [3, 8, 10],
+            [4, 11, 5, 12],
+            [13, 6, 14, 7, 15],
+        ]
+        step = self.dia + 1          # gap between ball centers
+        apex_x = 250 + self.offset_x
+        center_y = 339 + self.offset_y   # vertical center of table
+        for col_idx, col_balls in enumerate(rack_cols):
+            x = apex_x + col_idx * step
+            n = len(col_balls)
+            # Center the column around center_y
+            col_top_y = center_y - (n - 1) * step / 2
+            for row_idx, ball_id in enumerate(col_balls):
+                y = col_top_y + row_idx * step
+                b = self.create_ball(self.dia / 2, (x, y), ball_id)
                 self.balls.append(b)
                 self.ball_types[b.body] = ball_id
-            rows -= 1
             
         self.cue_ball_pos = (888 + self.offset_x, 339 + self.offset_y) 
         self.cue_ball = self.create_ball(self.dia/2, self.cue_ball_pos, 0)
@@ -221,6 +240,11 @@ class Billiards(BaseGame):
         if self.winner is not None:
             return
 
+        # Block all player mouse input during bot's turn
+        is_bot_turn = getattr(self.session, 'is_single_player', False) and self.current_player == 2
+        if is_bot_turn:
+            return
+
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN and self.state == AIMING:
                 if self.ball_in_hand:
@@ -248,8 +272,30 @@ class Billiards(BaseGame):
         elif own_group == 'stripes':
             target_balls = [b for b in self.balls if self.ball_types[b.body] in range(9, 16)]
         else:
-            # Group not yet assigned – avoid 8-ball and opponent balls if possible
-            target_balls = [b for b in self.balls if self.ball_types[b.body] not in [0, 8]]
+            # ── Open Table: Evaluate which group is easier ──────────────────
+            solids = [b for b in self.balls if self.ball_types[b.body] in range(1, 8)]
+            stripes = [b for b in self.balls if self.ball_types[b.body] in range(9, 16)]
+            
+            def eval_group(group_balls):
+                if not group_balls: return 999999
+                total_dist = 0
+                for gb in group_balls:
+                    best_d = 999999
+                    for pocket in self.pockets:
+                        px = pocket[0] + self.offset_x
+                        py = pocket[1] + self.offset_y
+                        d = (gb.body.position - pymunk.Vec2d(px, py)).length
+                        if d < best_d: best_d = d
+                    total_dist += best_d
+                return total_dist / len(group_balls)
+            
+            score_solids = eval_group(solids)
+            score_stripes = eval_group(stripes)
+            
+            if score_solids <= score_stripes:
+                target_balls = solids
+            else:
+                target_balls = stripes
 
         shooting_eight = False
         if not target_balls:
@@ -265,52 +311,91 @@ class Billiards(BaseGame):
         else:
             opp_ids = set()
 
+        # ── Helper: does the cue-ball path pass near any ball? ───────────────
+        def path_hits_ball(start_pos, direction, distance, exclude_bodies):
+            for ob in self.balls:
+                if ob.body in exclude_bodies: continue
+                ob_pos = ob.body.position
+                to_ob = ob_pos - start_pos
+                proj = to_ob.dot(direction)
+                if proj < 0 or proj > distance: continue
+                perp = (to_ob - direction * proj).length
+                if perp < self.dia * 0.99:
+                    return ob
+            return None
+
         # ── Smart ball-in-hand placement ─────────────────────────────────────
         if self.ball_in_hand:
             if difficulty == 'hard' and target_balls:
                 best_hand_pos = (888 + self.offset_x, 339 + self.offset_y)
                 best_hand_score = -9999
-                for tx in [550, 700, 850, 950, 1050]:
-                    for ty in [200, 339, 480]:
+                aim_pockets = [(75, 75), (592, 68), (1114, 75), (75, 604), (592, 610), (1114, 604)]
+                
+                min_x = self.offset_x + 77 + self.dia/2
+                max_x = self.offset_x + 1122 - self.dia/2
+                min_y = self.offset_y + 77 + self.dia/2
+                max_y = self.offset_y + 600 - self.dia/2
+
+                # Very fine grid search for hard bot over ENTIRE table
+                for tx in range(100, 1100, 25):
+                    for ty in range(100, 550, 25):
                         cand = pymunk.Vec2d(tx + self.offset_x, ty + self.offset_y)
+                        
+                        collision = False
+                        for ob in self.balls:
+                            if (ob.body.position - cand).length < self.dia * 1.2:
+                                collision = True
+                                break
+                        if collision: continue
+                        
                         for ball in target_balls:
-                            for pocket in self.pockets:
-                                px = pocket[0] + self.offset_x
-                                py = pocket[1] + self.offset_y
+                            for p_idx, pocket in enumerate(self.pockets):
+                                px = aim_pockets[p_idx][0] + self.offset_x
+                                py = aim_pockets[p_idx][1] + self.offset_y
                                 b_pos = ball.body.position
                                 v_pb = b_pos - pymunk.Vec2d(px, py)
-                                if v_pb.length == 0: continue
+                                dist_to_pocket = v_pb.length
+                                if dist_to_pocket == 0: continue
+                                
+                                ball_travel_dir = -v_pb.normalized()
                                 ghost = b_pos + v_pb.normalized() * self.dia
+                                
+                                if ghost.x < min_x or ghost.x > max_x or ghost.y < min_y or ghost.y > max_y:
+                                    continue
+                                    
                                 shot_v = ghost - cand
-                                if shot_v.length == 0: continue
-                                angle_diff = abs(shot_v.normalized().angle - (-v_pb).normalized().angle)
-                                score = 1000 - v_pb.length - shot_v.length
-                                if angle_diff > math.pi / 4:
-                                    score -= 400
+                                dist_ghost = shot_v.length
+                                if dist_ghost == 0: continue
+                                shot_dir = shot_v.normalized()
+                                
+                                dot_cut = max(-1.0, min(1.0, shot_dir.dot(ball_travel_dir)))
+                                cut_angle = math.acos(dot_cut)
+                                if cut_angle > math.pi / 2 + 0.05: continue
+                                
+                                # Check paths
+                                if path_hits_ball(cand, shot_dir, dist_ghost, {ball.body}): continue
+                                if path_hits_ball(b_pos, ball_travel_dir, dist_to_pocket, {ball.body}): continue
+                                
+                                cut_penalty = cut_angle * (dist_to_pocket + 100) * 3.0
+                                dist_penalty = dist_to_pocket * 1.5 + dist_ghost * 1.0
+                                score = 10000.0 - dist_penalty - cut_penalty
+                                
                                 if score > best_hand_score:
                                     best_hand_score = score
                                     best_hand_pos = (cand.x, cand.y)
-                self.cue_ball.body.position = best_hand_pos
+                # Store preview position – actual placement happens after a visual delay
+                self.bot_place_pos = best_hand_pos
             else:
-                self.cue_ball.body.position = (888 + self.offset_x, 339 + self.offset_y)
-            self.ball_in_hand = False
+                self.bot_place_pos = (888 + self.offset_x, 339 + self.offset_y)
+            
+            # Start preview: show ball at bot_place_pos for 1.2 seconds before confirming
+            self.bot_placing = True
+            self.bot_place_timer = pygame.time.get_ticks()
+            return  # Don't place yet; placement happens in update()
 
         cue_pos = self.cue_ball.body.position
 
-        # ── Helper: does the cue-ball path pass near any ball? ───────────────
-        def path_hits_ball(cue, direction, distance, exclude_bodies):
-            """Very rough: check if shot direction passes within 2*dia of any non-target ball."""
-            for ob in self.balls:
-                if ob.body in exclude_bodies: continue
-                ob_pos = ob.body.position
-                # Project ob_pos onto the ray
-                to_ob = ob_pos - cue
-                proj = to_ob.dot(direction)
-                if proj < 0 or proj > distance: continue
-                perp = (to_ob - direction * proj).length
-                if perp < self.dia * 2:
-                    return ob
-            return None
+
 
         # ── Easy bot ─────────────────────────────────────────────────────────
         if difficulty == 'easy':
@@ -331,39 +416,83 @@ class Billiards(BaseGame):
 
         # ── Medium / Hard bot ────────────────────────────────────────────────
         else:
-            best_score = -10000
+            best_score = -99999
             best_dir   = pymunk.Vec2d(1, 0)
             best_force = 7000
 
+            aim_pockets = [(75, 75), (592, 68), (1114, 75), (75, 604), (592, 610), (1114, 604)]
             for ball in target_balls:
                 ball_body = ball.body
-                for pocket in self.pockets:
-                    px = pocket[0] + self.offset_x
-                    py = pocket[1] + self.offset_y
+                for p_idx, pocket in enumerate(self.pockets):
+                    px = aim_pockets[p_idx][0] + self.offset_x
+                    py = aim_pockets[p_idx][1] + self.offset_y
 
                     b_pos = ball_body.position
+                    # Vector from pocket to ball
                     v_pb  = b_pos - pymunk.Vec2d(px, py)
                     dist_to_pocket = v_pb.length
                     if dist_to_pocket == 0: continue
 
-                    ghost_pos   = b_pos + v_pb.normalized() * self.dia
+                    # Ghost ball position: where cue ball must be at impact
+                    v_pb_norm = v_pb.normalized()
+                    ghost_pos   = b_pos + v_pb_norm * self.dia
                     shot_v      = ghost_pos - cue_pos
                     dist_ghost  = shot_v.length
                     if dist_ghost == 0: continue
 
                     shot_dir = shot_v.normalized()
 
-                    # ── Rule: do not accidentally pocket 8-ball unless it's the target
+                    # ── Cut angle: how "straight" is this shot? ──────────────
+                    # The target ball must travel from b_pos toward pocket.
+                    # Direction ball travels after impact = -v_pb_norm (toward pocket)
+                    ball_travel_dir = -v_pb_norm
+                    # Cut angle = angle between cue direction and ball travel direction
+                    # 0 = straight shot (easy), pi/2 = max thin cut (hard)
+                    dot_cut = max(-1.0, min(1.0, shot_dir.dot(ball_travel_dir)))
+                    cut_angle = math.acos(dot_cut)  # 0..pi
+
+                    # Shots with cut_angle > 90 deg are physically impossible
+                    # (cue would push ball away from pocket)
+                    if cut_angle > math.pi / 2 + 0.05:
+                        continue
+
+                    # ── Check if ghost pos is valid (not inside cushion) ─────────
+                    min_x = self.offset_x + 77 + self.dia/2
+                    max_x = self.offset_x + 1122 - self.dia/2
+                    min_y = self.offset_y + 77 + self.dia/2
+                    max_y = self.offset_y + 600 - self.dia/2
+                    if ghost_pos.x < min_x or ghost_pos.x > max_x or ghost_pos.y < min_y or ghost_pos.y > max_y:
+                        continue # Impossible to hit ghost ball without hitting rail first
+                        
+                    # ── Check if any ball blocks the cue path to ghost ball ──────
+                    blocker = path_hits_ball(cue_pos, shot_dir, dist_ghost,
+                                             exclude_bodies={self.cue_ball.body, ball_body})
+                    path_blocked = blocker is not None
+
+                    # ── Check if target ball's path to pocket is blocked ─────────
+                    target_blocker = path_hits_ball(b_pos, ball_travel_dir, dist_to_pocket,
+                                                    exclude_bodies={ball_body, self.cue_ball.body})
+                    target_path_blocked = target_blocker is not None
+
+                    # ── 8-ball danger checks ────────────────────────────────────
+                    eight_danger = False
                     if not shooting_eight:
-                        blocker = path_hits_ball(cue_pos, shot_dir, dist_ghost,
-                                                 exclude_bodies={self.cue_ball.body, ball_body})
-                        if blocker is not None:
+                        if path_blocked and blocker is not None:
                             bid = self.ball_types[blocker.body]
                             if bid == 8:
-                                continue  # Skip this shot – would tap the 8-ball
+                                eight_danger = True
 
-                    # ── Rule: cue must not pocket opponent balls directly
-                    # (we penalise rather than discard, for robustness)
+                        # Check if target ball after impact could roll near 8-ball
+                        if not eight_danger and eight_ball:
+                            eight_pos = eight_ball[0].body.position
+                            to_eight = eight_pos - b_pos
+                            proj_eight = to_eight.dot(ball_travel_dir)
+                            if 0 < proj_eight < dist_to_pocket:
+                                perp_eight = (to_eight - ball_travel_dir * proj_eight).length
+                                if perp_eight < self.dia * 1.5:
+                                    eight_danger = True
+
+                    # ── Opponent ball in cue path ───────────────────────────────
                     opp_in_path = False
                     for ob in self.balls:
                         ob_id = self.ball_types[ob.body]
@@ -375,30 +504,37 @@ class Billiards(BaseGame):
                             opp_in_path = True
                             break
 
-                    # Angle quality
-                    angle_diff = abs(shot_dir.angle - (-v_pb).normalized().angle)
-                    while angle_diff > math.pi: angle_diff = abs(angle_diff - 2 * math.pi)
+                    # ── Score calculation ───────────────────────────────────────
+                    cut_penalty = cut_angle * (dist_to_pocket + 100) * 3.0
+                    dist_penalty = dist_to_pocket * 1.5 + dist_ghost * 1.0
+                    
+                    score = 10000.0 - dist_penalty - cut_penalty
 
-                    score = 1500 - dist_to_pocket * 0.8 - dist_ghost * 0.5
-                    if opp_in_path:       score -= 1200   # heavy penalty for hitting opponent ball
-                    if angle_diff > math.pi / 4: score -= 500
-                    if angle_diff > math.pi / 2: score -= 1000
+                    if path_blocked:    score -= 4000
+                    if target_path_blocked: score -= 4000
+                    if eight_danger:    score -= 5000
+                    if opp_in_path:     score -= 2000
 
                     if score > best_score:
                         best_score = score
                         best_dir   = shot_dir
-                        needed     = dist_to_pocket * 14 + dist_ghost * 9
-                        best_force = min(self.max_force, max(6500, needed))
+                        # Calculate force needed to reach pocket
+                        needed = dist_to_pocket * 14 + dist_ghost * 8
+                        # 5000 min force guarantees the ball reaches the pocket!
+                        best_force = min(self.max_force, max(5000, needed))
 
             if difficulty == 'medium':
-                best_dir   = best_dir.rotated(random.uniform(-0.03, 0.03))
-                best_force = min(self.max_force, max(5000, best_force * random.uniform(0.9, 1.05)))
-            # hard: no noise at all
+                # Medium: slight random aim error and force variation
+                best_dir   = best_dir.rotated(random.uniform(-0.05, 0.05))
+                best_force = min(self.max_force, max(4500, best_force * random.uniform(0.85, 1.1)))
+            # hard: zero noise — perfect aim
 
+            self.bot_start_dir    = self.bot_target_dir if self.bot_target_dir else pymunk.Vec2d(1, 0)
             self.bot_target_dir   = best_dir
             self.bot_target_force = best_force
 
         if self.bot_target_dir is None:
+            self.bot_start_dir    = pymunk.Vec2d(1, 0)
             self.bot_target_dir   = pymunk.Vec2d(1, 0)
             self.bot_target_force = 7000
 
@@ -431,12 +567,28 @@ class Billiards(BaseGame):
 
         is_bot_turn = getattr(self.session, 'is_single_player', False) and self.current_player == 2
         
+        # Handle bot ball-in-hand visual preview
+        if is_bot_turn and self.bot_placing:
+            if self.bot_place_pos is not None:
+                # Show cue ball at preview position during delay
+                self.cue_ball.body.position = self.bot_place_pos
+                self.cue_ball.body.velocity = (0, 0)
+            # After 1.4 seconds, confirm placement
+            if pygame.time.get_ticks() - self.bot_place_timer > 1400:
+                self.bot_placing = False
+                self.ball_in_hand = False
+                self.bot_timer = 0  # reset so bot starts thinking fresh
+            return  # Don't do anything else while placing
+        
         if is_bot_turn and self.state == AIMING:
             if self.bot_timer == 0:
-                self.bot_timer = pygame.time.get_ticks() + 1500 # 1.5s thinking time
-            elif pygame.time.get_ticks() > self.bot_timer:
+                # Compute shot IMMEDIATELY so we can visualize it during the thinking delay
                 self._bot_play()
-                self.shoot(override_dir=self.bot_target_dir, override_force=self.bot_target_force)
+                if not self.bot_placing:
+                    self.bot_timer = pygame.time.get_ticks() + 1800  # 1.8s show visualization
+            elif pygame.time.get_ticks() > self.bot_timer:
+                if not self.bot_placing:
+                    self.shoot(override_dir=self.bot_target_dir, override_force=self.bot_target_force)
                 self.bot_timer = 0
 
         self.space.step(1 / 120.0)
@@ -590,6 +742,51 @@ class Billiards(BaseGame):
                         cue_pred_end = impact_center + cue_deflect_dir * 100
                         pygame.draw.line(self.screen, (255, 255, 255), (int(impact_center.x), int(impact_center.y)), (int(cue_pred_end.x), int(cue_pred_end.y)), 1)
 
+    def _draw_prediction_for_dir(self, dir_x, dir_y):
+        """Draw prediction line for a given normalized direction (used by bot visualization)."""
+        if not self.cue_ball or self.ball_in_hand or self.state == MOVING: return
+        length = math.hypot(dir_x, dir_y)
+        if length == 0: return
+        dir_x /= length
+        dir_y /= length
+
+        dir_vec = pymunk.Vec2d(dir_x, dir_y)
+        cue_pos = self.cue_ball.body.position
+        start = cue_pos
+        end = start + dir_vec * 2000
+
+        shapes_to_restore = list(self.cue_ball.body.shapes)
+        for s in shapes_to_restore: self.space.remove(s)
+        try:
+            shape_filter = pymunk.ShapeFilter(mask=pymunk.ShapeFilter.ALL_MASKS())
+            info = self.space.segment_query_first(start, end, self.dia / 2, shape_filter)
+        finally:
+            for s in shapes_to_restore: self.space.add(s)
+
+        if info:
+            impact_center = start + (end - start) * info.alpha
+            pygame.draw.line(self.screen, (255, 255, 255),
+                             (int(start.x), int(start.y)), (int(impact_center.x), int(impact_center.y)), 1)
+            pygame.draw.circle(self.screen, (255, 255, 255),
+                               (int(impact_center.x), int(impact_center.y)), int(self.dia / 2), 1)
+            hit_body = info.shape.body
+            if hit_body in self.ball_types and self.ball_types[hit_body] != 0:
+                target_pos = hit_body.position
+                target_dir = target_pos - impact_center
+                if target_dir.length > 0:
+                    target_dir = target_dir.normalized()
+                    pred_end = target_pos + target_dir * 150
+                    pygame.draw.line(self.screen, (255, 255, 0),
+                                     (int(target_pos.x), int(target_pos.y)), (int(pred_end.x), int(pred_end.y)), 2)
+                    dot = dir_vec.dot(target_dir)
+                    cue_deflect_dir = dir_vec - target_dir * dot
+                    if cue_deflect_dir.length > 0:
+                        cue_deflect_dir = cue_deflect_dir.normalized()
+                        cue_pred_end = impact_center + cue_deflect_dir * 100
+                        pygame.draw.line(self.screen, (255, 255, 255),
+                                         (int(impact_center.x), int(impact_center.y)),
+                                         (int(cue_pred_end.x), int(cue_pred_end.y)), 1)
+
     def draw_player_balls(self, player, x, y):
         group = self.p1_group if player == 1 else self.p2_group
         if not group: return
@@ -629,35 +826,86 @@ class Billiards(BaseGame):
             if img:
                 self.screen.blit(img, (mpos[0] - self.dia/2, mpos[1] - self.dia/2))
                 
-        if self.state == AIMING and not self.ball_in_hand:
-            mouse_pos = pygame.mouse.get_pos()
-            cue_pos = self.cue_ball.body.position
-            dir_x = mouse_pos[0] - cue_pos.x
-            dir_y = mouse_pos[1] - cue_pos.y
-            
-            cue_angle = math.degrees(math.atan2(-dir_y, dir_x)) + 180
-            cue_rotated = pygame.transform.rotate(self.cue_image_orig, cue_angle)
-            
-            pull_back = 0
-            if self.powering_up:
-                pull_back = (self.force / self.max_force) * 40
-            
-            offset_dist = self.dia/2 + 10 + pull_back
-            
-            length = math.hypot(dir_x, dir_y)
-            if length > 0:
-                dx = dir_x / length
-                dy = dir_y / length
-                cue_rect = cue_rotated.get_rect(center=(cue_pos.x - dx * offset_dist, cue_pos.y - dy * offset_dist))
-                self.screen.blit(cue_rotated, cue_rect)
-                
-        self.draw_prediction_line()
-        
-        # Bot aiming line visualization
         is_bot_turn = getattr(self.session, 'is_single_player', False) and self.current_player == 2
-        if is_bot_turn and self.state == AIMING and self.bot_timer > 0:
-            pygame.draw.circle(self.screen, (255, 0, 0), (int(self.cue_ball.body.position.x), int(self.cue_ball.body.position.y)), 10, 2)
-            self.draw_persian_text("Bot Thinking...", (255, 100, 100), (int(self.cue_ball.body.position.x) - 40, int(self.cue_ball.body.position.y) - 40), self.font)
+
+        if self.state == AIMING and not self.ball_in_hand:
+            cue_pos = self.cue_ball.body.position
+
+            if is_bot_turn and self.bot_timer > 0 and self.bot_target_dir is not None:
+                # ── Bot turn: sweeping aim and power visualization ───────────
+                think_start = self.bot_timer - 1800
+                elapsed_think = pygame.time.get_ticks() - think_start
+                progress = max(0.0, min(1.0, elapsed_think / 1800.0))
+
+                # Phase 1: Sweeping aim (0.0 to 0.6)
+                # Phase 2: Powering up (0.6 to 1.0)
+                aim_progress = min(1.0, progress / 0.6)
+                power_progress = max(0.0, (progress - 0.6) / 0.4)
+
+                start_angle = self.bot_start_dir.angle
+                target_angle = self.bot_target_dir.angle
+
+                # Shortest path interpolation for angles
+                angle_diff = (target_angle - start_angle + math.pi) % (2 * math.pi) - math.pi
+                # Ease-out sine interpolation
+                current_angle = start_angle + angle_diff * math.sin(aim_progress * math.pi / 2)
+
+                dir_x, dir_y = math.cos(current_angle), math.sin(current_angle)
+
+                # Cue pullback animates from 0 → max during phase 2
+                pull_ratio = self.bot_target_force / self.max_force
+                pull_back = power_progress * pull_ratio * 40
+
+                cue_angle = math.degrees(math.atan2(-dir_y, dir_x)) + 180
+                cue_rotated = pygame.transform.rotate(self.cue_image_orig, cue_angle)
+                offset_dist = self.dia / 2 + 10 + pull_back
+                cue_rect = cue_rotated.get_rect(
+                    center=(cue_pos.x - dir_x * offset_dist, cue_pos.y - dir_y * offset_dist)
+                )
+                self.screen.blit(cue_rotated, cue_rect)
+
+                # Draw bot prediction line using current interpolated direction
+                self._draw_prediction_for_dir(dir_x, dir_y)
+
+                # Animated power bar
+                bar_fill = power_progress * pull_ratio
+                bar_w = int(bar_fill * 300)
+                pygame.draw.rect(self.screen, (50, 50, 50),
+                                 (self.width // 2 - 150, self.height - 45, 300, 22), border_radius=6)
+                bar_color = (80, 220, 80) if bar_fill < 0.5 else (255, 160, 0) if bar_fill < 0.8 else (255, 50, 50)
+                if bar_w > 0:
+                    pygame.draw.rect(self.screen, bar_color,
+                                     (self.width // 2 - 150, self.height - 45, bar_w, 22), border_radius=6)
+                pygame.draw.rect(self.screen, (220, 220, 220),
+                                 (self.width // 2 - 150, self.height - 45, 300, 22), 2, border_radius=6)
+                # Label
+                pow_label = self.font.render(f"Power: {int(bar_fill*100)}%", True, (255, 255, 255))
+                self.screen.blit(pow_label, (self.width // 2 - 150, self.height - 70))
+
+            else:
+                # ── Player turn: normal mouse-based cue ──────────────────────
+                mouse_pos = pygame.mouse.get_pos()
+                dir_x = mouse_pos[0] - cue_pos.x
+                dir_y = mouse_pos[1] - cue_pos.y
+
+                cue_angle = math.degrees(math.atan2(-dir_y, dir_x)) + 180
+                cue_rotated = pygame.transform.rotate(self.cue_image_orig, cue_angle)
+
+                pull_back = 0
+                if self.powering_up:
+                    pull_back = (self.force / self.max_force) * 40
+
+                offset_dist = self.dia / 2 + 10 + pull_back
+                length = math.hypot(dir_x, dir_y)
+                if length > 0:
+                    dx = dir_x / length
+                    dy = dir_y / length
+                    cue_rect = cue_rotated.get_rect(
+                        center=(cue_pos.x - dx * offset_dist, cue_pos.y - dy * offset_dist)
+                    )
+                    self.screen.blit(cue_rotated, cue_rect)
+
+                self.draw_prediction_line()
         
         # UI
         p1_name = self.session.player1_name
@@ -683,7 +931,28 @@ class Billiards(BaseGame):
         self.draw_player_balls(2, self.width - 350, 50)
         
         if self.ball_in_hand and self.state == AIMING:
-            self.draw_persian_text("Ball in Hand - Click to place", (255, 100, 100), (self.width//2 - 150, 20), self.font)
+            is_bot_turn = getattr(self.session, 'is_single_player', False) and self.current_player == 2
+            if is_bot_turn:
+                self.draw_persian_text("Bot choosing position...", (255, 180, 50), (self.width//2 - 160, 20), self.font)
+            else:
+                self.draw_persian_text("Ball in Hand - Click to place", (255, 100, 100), (self.width//2 - 150, 20), self.font)
+        
+        # Bot ball-in-hand preview: show ghost cue ball with animated ring
+        is_bot_turn_draw = getattr(self.session, 'is_single_player', False) and self.current_player == 2
+        if is_bot_turn_draw and self.bot_placing and self.bot_place_pos is not None:
+            px, py = int(self.bot_place_pos[0]), int(self.bot_place_pos[1])
+            # Draw cue ball image at preview position
+            img = self.ball_images.get(0)
+            if img:
+                self.screen.blit(img, (px - self.dia//2, py - self.dia//2))
+            # Pulsing ring to highlight placement
+            elapsed = pygame.time.get_ticks() - self.bot_place_timer
+            pulse = abs(math.sin(elapsed / 200.0))
+            ring_r = int(self.dia * 0.8 + pulse * 10)
+            ring_alpha = int(180 + pulse * 75)
+            ring_surf = pygame.Surface((ring_r*2+4, ring_r*2+4), pygame.SRCALPHA)
+            pygame.draw.circle(ring_surf, (255, 220, 50, ring_alpha), (ring_r+2, ring_r+2), ring_r, 3)
+            self.screen.blit(ring_surf, (px - ring_r - 2, py - ring_r - 2))
         
         if self.powering_up:
             bar_w = int(self.force / self.max_force * 300)
