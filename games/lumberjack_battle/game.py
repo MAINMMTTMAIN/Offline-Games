@@ -59,7 +59,9 @@ class LumberjackBattle(BaseGame):
                 "color": self.colors["player1"],
                 "name": self.session.player1_name,
                 "anim_timer": 0,
-                "floating_texts": []
+                "floating_texts": [],
+                "death_anim_progress": 0.0,  # 0.0 = upright, 1.0 = fully fallen
+                "death_star_angle": 0.0,      # rotating stars angle
             },
             "p2": {
                 "side": 1,
@@ -70,7 +72,9 @@ class LumberjackBattle(BaseGame):
                 "color": self.colors["player2"],
                 "name": self.session.player2_name,
                 "anim_timer": 0,
-                "floating_texts": []
+                "floating_texts": [],
+                "death_anim_progress": 0.0,
+                "death_star_angle": 0.0,
             }
         }
         
@@ -217,6 +221,12 @@ class LumberjackBattle(BaseGame):
                 ft["alpha"] -= 12
             p["floating_texts"] = [ft for ft in p["floating_texts"] if ft["alpha"] > 0]
             
+            # Animate death fall
+            if p["dead"]:
+                if p["death_anim_progress"] < 1.0:
+                    p["death_anim_progress"] = min(1.0, p["death_anim_progress"] + 0.04)
+                p["death_star_angle"] += 3.0  # spin stars
+            
             if not p["dead"]:
                 both_dead = False
                 p["time"] -= drain_rate * (1/60.0)
@@ -334,6 +344,124 @@ class LumberjackBattle(BaseGame):
                 
         pygame.draw.polygon(surface, self.colors["axe_blade"], points)
 
+    def draw_dead_lumberjack(self, surface, p_key, x, y, side):
+        """Draw a fallen lumberjack with X eyes and death animation."""
+        p = self.players[p_key]
+        shirt = self.colors["shirt1"] if p_key == "p1" else self.colors["shirt2"]
+        progress = p["death_anim_progress"]  # 0.0 to 1.0
+
+        # Ease-out interpolation for the fall angle
+        fall_angle = math.sin(progress * math.pi / 2) * 90.0  # 0 -> 90 degrees
+
+        # Direction of fall: Fall away from the tree based on current side
+        fall_dir = p["side"]
+
+        # Create a temporary surface to draw the upright character
+        char_w, char_h = 80, 100
+        char_surf = pygame.Surface((char_w, char_h), pygame.SRCALPHA)
+
+        cx = char_w // 2
+        cy = char_h - 5  # feet at bottom
+
+        # --- Draw character on temp surface ---
+        # Legs
+        pygame.draw.rect(char_surf, self.colors["pants"], (cx-8, cy-25, 6, 25))
+        pygame.draw.rect(char_surf, self.colors["pants"], (cx+2, cy-25, 6, 25))
+
+        # Body
+        pygame.draw.rect(char_surf, shirt, (cx-15, cy-55, 30, 32), border_radius=6)
+
+        # Head
+        pygame.draw.circle(char_surf, self.colors["skin"], (cx, cy-65), 14)
+
+        # Beard
+        beard_color = (139, 69, 19)
+        beard_pts = [(cx-14, cy-65), (cx+14, cy-65), (cx+5, cy-48), (cx-5, cy-48)]
+        pygame.draw.polygon(char_surf, beard_color, beard_pts)
+
+        # Beanie (match shirt color)
+        pygame.draw.polygon(char_surf, shirt, [(cx-12, cy-72), (cx+12, cy-72), (cx, cy-85)])
+        pygame.draw.circle(char_surf, (220, 220, 220), (cx, cy-85), 4)
+
+        # X Eyes (dead eyes)
+        eye_color = (200, 0, 0)
+        for ex, ey in [(cx - 6, cy - 70), (cx + 6, cy - 70)]:
+            sz = 5
+            pygame.draw.line(char_surf, eye_color, (ex-sz, ey-sz), (ex+sz, ey+sz), 3)
+            pygame.draw.line(char_surf, eye_color, (ex+sz, ey-sz), (ex-sz, ey+sz), 3)
+
+        # Squiggly mouth (dead)
+        for i in range(4):
+            mx = cx - 6 + i * 4
+            my = cy - 56 + (2 if i % 2 == 0 else -2)
+            pygame.draw.circle(char_surf, (180, 80, 60), (mx, my), 2)
+
+        # Arms drooping down (dead)
+        pygame.draw.line(char_surf, shirt, (cx-5, cy-45), (cx-20, cy-20), 6)
+        pygame.draw.line(char_surf, self.colors["skin"], (cx-20, cy-20), (cx-25, cy-5), 5)
+        pygame.draw.line(char_surf, shirt, (cx+5, cy-45), (cx+20, cy-20), 6)
+        pygame.draw.line(char_surf, self.colors["skin"], (cx+20, cy-20), (cx+25, cy-5), 5)
+
+        # Axe on ground next to body
+        pygame.draw.line(char_surf, self.colors["axe_handle"], (cx+5, cy-10), (cx+30, cy-35), 4)
+        axe_pts = [(cx+30, cy-35), (cx+40, cy-40), (cx+35, cy-52), (cx+25, cy-47)]
+        pygame.draw.polygon(char_surf, self.colors["axe_blade"], axe_pts)
+
+        # --- Rotate the surface by fall angle ---
+        rotate_angle = fall_dir * fall_angle  # positive = clockwise
+        rotated = pygame.transform.rotate(char_surf, -rotate_angle)
+
+        # Pygame rotation expands the surface. To pivot around (cx, cy):
+        # 1. Get original rect centered on some arbitrary point (0,0)
+        orig_rect = char_surf.get_rect()
+        # 2. Get the pivot vector relative to the center of the original rect
+        pivot_vec = pygame.Vector2(cx - orig_rect.centerx, cy - orig_rect.centery)
+        # 3. Rotate this vector
+        # Note: pygame.transform.rotate uses counter-clockwise positive angles, 
+        # so Vector2.rotate needs the negative of that if we want it to match
+        pivot_vec_rot = pivot_vec.rotate(rotate_angle)
+        # 4. Get the new rect, and set its center so that the rotated pivot aligns with the original pivot
+        rot_rect = rotated.get_rect()
+        
+        # When fully fallen (progress=1.0, angle=90), the character's width becomes its height.
+        # Ensure the body rests exactly on top of the ground (shift up by 15 pixels).
+        rot_rect.center = (x - pivot_vec_rot.x,
+                           y - pivot_vec_rot.y - 15 * progress)
+        
+        # Draw the rotated surface
+        surface.blit(rotated, rot_rect)
+
+        # --- Spinning stars around head (appear after fully fallen) ---
+        if progress > 0.5:
+            star_alpha = int(min(255, (progress - 0.5) * 2 * 255))
+            star_angle = p["death_star_angle"]
+            
+            # Calculate head position based on rotation
+            # Head is at (cx, cy - 65) in local space
+            head_local = pygame.Vector2(0, -65) 
+            head_rot = head_local.rotate(rotate_angle)
+            head_screen_x = x + head_rot.x
+            head_screen_y = y + head_rot.y - 15 * progress
+
+            num_stars = 3
+            for i in range(num_stars):
+                angle_rad = math.radians(star_angle + i * (360 / num_stars))
+                sx = int(head_screen_x + math.cos(angle_rad) * 22)
+                sy = int(head_screen_y + math.sin(angle_rad) * 12)
+                star_surf = pygame.Surface((20, 20), pygame.SRCALPHA)
+                # Draw a simple 5-point star
+                self._draw_star(star_surf, 10, 10, 8, 3, (255, 220, 0, star_alpha))
+                surface.blit(star_surf, (sx - 10, sy - 10))
+
+    def _draw_star(self, surface, cx, cy, outer_r, inner_r, color):
+        """Draw a 5-point star on a surface."""
+        points = []
+        for i in range(10):
+            angle = math.radians(-90 + i * 36)
+            r = outer_r if i % 2 == 0 else inner_r
+            points.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
+        pygame.draw.polygon(surface, color, points)
+
     def draw_player_screen(self, surface, p_key, width, height):
         p = self.players[p_key]
         surface.fill(self.colors["bg"])
@@ -409,11 +537,8 @@ class LumberjackBattle(BaseGame):
         if not p["dead"]:
             self.draw_lumberjack(surface, p_key, p_x, p_y, p["side"], p["anim_timer"] > 0)
         else:
-            g_w, g_h = 40, 50
-            g_x = p_x - g_w//2
-            g_y = p_y - g_h
-            pygame.draw.rect(surface, (150,150,150), (g_x, g_y, g_w, g_h), border_radius=10)
-            self.draw_persian_text("RIP", (0,0,0), (g_x + 5, g_y + 10), font=pygame.font.SysFont("arial", 14))
+            # Fallen lumberjack death animation
+            self.draw_dead_lumberjack(surface, p_key, p_x, p_y, p["side"])
             
         # Draw Floating Texts
         font_ft = pygame.font.SysFont("arial", 28, bold=True)
