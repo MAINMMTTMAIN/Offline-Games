@@ -4,8 +4,6 @@ import os
 import importlib
 from persian_utils import render_persian_text, reshape_persian
 
-Window_Icon = pygame.image.load("myicon.ico")
-pygame.display.set_icon(Window_Icon)
 
 def resource_path(relative_path):
     """ پیدا کردن مسیر صحیح فایل‌ها در حالت عادی و حالت exe """
@@ -15,6 +13,7 @@ def resource_path(relative_path):
     except Exception:
         base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
+
 
 def get_base_path():
     """ پیدا کردن مسیر پوشه بازی‌ها در هر دو حالت """
@@ -26,6 +25,10 @@ def get_base_path():
         return os.path.dirname(os.path.abspath(__file__))
 # مقداردهی اولیه Pygame
 pygame.init()
+
+
+Window_Icon = pygame.image.load(resource_path("myicon.ico"))
+pygame.display.set_icon(Window_Icon)
 
 # تنظیمات پنجره اصلی به صورت تمام صفحه (Fullscreen)
 infoObject = pygame.display.Info()
@@ -232,10 +235,6 @@ class ArcadeMenu:
             # ساخت مسیر دقیق با get_base_path
             # در exe این مسیر به داخل MEIPASS اشاره می‌کند
             full_icon_path = os.path.join(get_base_path(), "games", game['id'], "icon.png")
-            
-            # اگر فایل آیکون نبود، مسیر قدیمی Tqi7Z.png را چک کن
-            if not os.path.exists(full_icon_path):
-                full_icon_path = os.path.join(get_base_path(), "games", game['id'], "Tqi7Z.png")
 
             try:
                 if os.path.exists(full_icon_path):
@@ -462,8 +461,6 @@ def show_welcome_screen(screen):
             folder_path = os.path.join(games_dir, folder)
             if os.path.isdir(folder_path) and not folder.startswith("__"):
                 icon_path = os.path.join(folder_path, "icon.png")
-                if not os.path.exists(icon_path):
-                    icon_path = os.path.join(folder_path, "Tqi7Z.png")
                 if os.path.exists(icon_path):
                     try:
                         img = pygame.image.load(icon_path).convert_alpha()
