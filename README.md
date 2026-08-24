@@ -113,11 +113,11 @@ Offline_Games/
     │
     ├───backgammon/
     │       game.py                   # Backgammon logic and board renderer
-    │       Tqi7Z.png                 # Game icon asset
+    │       icon.png                  # Game icon asset
     │       
     ├───battleship/
     │       game.py                   # Battleship naval warfare logic
-    │       Tqi7Z.png                 # Game icon asset
+    │       icon.png                  # Game icon asset
     │       
     ├───bomberman/
     │       game.py                   # Bomberman classic explosive action
@@ -125,7 +125,7 @@ Offline_Games/
     │       
     ├───chess/
     │   │   game.py                   # Chess logic and UI wrapper
-    │   │   Tqi7Z.png                 # Game icon asset
+    │   │   icon.png                  # Game icon asset
     │   │   
     │   └───assets/pieces/            # Visual chess piece sprites (Black & White)
     │           bb.png, bk.png, bn.png, bp.png, bq.png, br.png
@@ -137,46 +137,46 @@ Offline_Games/
     │       
     ├───dots_and_boxes/
     │       game.py                   # Dots and boxes grid calculation & UI
-    │       Tqi7Z.png                 # Game icon asset
+    │       icon.png                  # Game icon asset
     │
     ├───lumberjack_battle/
     │       sounds/
-    │             chop.wav,crack.wav,die.wav            
+    │             chop.wav, crack.wav, die.wav            
     │       game.py                  
-    │       Tqi7Z.png                 # Game icon asset
+    │       icon.png                  # Game icon asset
     │  
     ├───memory_cards/
     │       game.py                   # Memory puzzle card matrix logic
     │       barbie.png, book.png, cat.png, computer.png, ... (Card pictures)
-    │       Tqi7Z.png                 # Game icon asset
+    │       icon.png                  # Game icon asset
     │       
     ├───minesweeper/
     │       game.py                   # Grid mine generation and logic
-    │       Tqi7Z.png                 # Game icon asset
+    │       icon.png                  # Game icon asset
     │       
     ├───pacman_duel/
     │   │   game.py                   # Pac-Man entities, maze logic, and AI
     │   │   maze.py                   # Classic map layout and grid definitions
-    │   │   Tqi7Z.png                 # Game icon asset
+    │   │   icon.png                  # Game icon asset
     │   │   
     │   └───pacman_sounds/            # Original sound effects (waka, eat, death, etc.)
     │           
     ├───SnakeLadders/
     │       game.py                   # Board traversal and dice-rolling logic
-    │       Tqi7Z.png                 # Game icon asset
+    │       icon.png                  # Game icon asset
     │       
     ├───snake_duel/
     │       sounds/                   
     │       game.py                   # Core duel mechanics and UI
-    │       Tqi7Z.png                 # Game icon asset
+    │       icon.png                  # Game icon asset
     │
     ├───typing_race/
     │       game.py                   
-    │       Tqi7Z.png                 # Game icon asset
+    │       icon.png                  # Game icon asset
     │
     └───tic_tac_toe/
             game.py                   # Grid matrix and Minimax state logic
-            Tqi7Z.png                 # Game icon asset
+            icon.png                  # Game icon asset
 ```
 </details>
 
